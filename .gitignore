@@ -1,0 +1,6 @@
+*.out
+*.log
+archive/
+trimmed/
+aligned/
+quantified/

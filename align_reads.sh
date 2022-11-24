@@ -13,8 +13,8 @@ module purge; module load bluebear
 module load STAR/2.7.2b-GCC-8.3.0
 
 DATABASE="/rds/projects/l/leachlj-potato-qtl-project/SharedGenomeFilesV6"
-INPUT_DIRECTORY="/rds/projects/l/leachlj-potato-qtl-project/M6_Area/OE_Scripts/trimmed"
-OUTPUT_DIRECTORY="/rds/projects/l/leachlj-potato-qtl-project/M6_Area/OE_Scripts/aligned"
+INPUT_DIRECTORY="/rds/projects/l/leachlj-potato-qtl-project/M6_Area/potato-blight-rna-seq-pipeline/trimmed"
+OUTPUT_DIRECTORY="/rds/projects/l/leachlj-potato-qtl-project/M6_Area/potato-blight-rna-seq-pipeline/aligned"
 
 if [ ! -d "${OUTPUT_DIRECTORY}" ]; then
 	mkdir -p "${OUTPUT_DIRECTORY}"
