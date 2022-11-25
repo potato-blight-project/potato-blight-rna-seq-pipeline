@@ -27,7 +27,7 @@ OUTPUT:
 
 Path of the folder for the inputs and outputs:
 ```{r}
-setwd("Y:/7.DEAnalysis_blight/")
+setwd("/rds/homes/o/oxe410/leachlj-potato-qtl-project/M6_Area/potato-blight-rna-seq-pipeline")
 ```
 
 
@@ -87,31 +87,49 @@ options(bitmapType='cairo')
 
 Preparing a table with the input files from HTSeq to run DESeq2 :
 ```{r}
-directory <- "../5.HTSEQ_blight/"
-sampleFiles <- grep("*count.txt", list.files(directory),value = TRUE)
-sampleNames <- c( "SMira_I48h1", "SMira_I48h2","SMira_I48h3",
-                 "Duke_I48h1","Duke_I48h2","Duke_I48h3",
-                 "Sshona_I48h1","Sshona_I48h2","Sshona_I48h3",
-                 "SMira_M48h1","SMira_M48h2","SMira_M48h3",
-                 "Duke_M48h1","Duke_M48h2","Duke_M48h3",
-                 "SShona_M48h1","SShona_M48h2","SShona_M48h3",
-  
-                 "SMira-C1","Duke-OI1", "Duke-OI2", "Duke-OI3",
-                 "SShona_C1", "SShona_C2", "SShona_C3", "SShona_OI1", "SShona_OI2", "SShona_OI3",
-                 "SMira-C2","SMira-C3","SMira-OI1","SMira-OI2","SMira-OI3",
-                 "Duke-C1", "Duke-C2", "Duke-C3")
+directory = './quantified'
+sampleFiles = grep('*count.txt', list.files(directory), value = TRUE)
+sampleNames = c(
+  'SMira_C1', 'SMira_C2', 'SMira_C3',
+  'SMira_OI1', 'SMira_OI2', 'SMira_OI3',
+  'Duke_C1', 'Duke_C2', 'Duke_C3',
+  'Duke_OI1', 'Duke_OI2', 'Duke_OI3',
+  'SShona_C1', 'SShona_C2', 'SShona_C3',
+  'SShona_OI1', 'SShona_OI2', 'SShona_OI3',
+  'SMira_I1', 'SMira_I2', 'SMira_I3',
+  'Duke_I1', 'Duke_I2', 'Duke_I3',
+  'SShona_I1', 'SShona_I2', 'SShona_I3',
+  'SMira_M1', 'SMira_M2', 'SMira_M3',
+  'Duke_M1', 'Duke_M2', 'Duke_M3',
+  'SShona_M1', 'SShona_M2', 'SShona_M3'
+)
 
-sampleReplicate <- c(rep(c(1,2,3),6),1,rep(c(1,2,3),3),2,3,rep(c(1,2,3),2))
+sampleReplicate = rep(c(1, 2, 3), 12)
 
-sampleVariety <- c(rep("SMira",3),rep("Duke",3),rep("SShona",3),
-                   rep("SMira",3),rep("Duke",3),rep("SShona",3),
-                   rep("SMira",1),rep("Duke",3),rep("SShona",6), rep("SMira",5),rep("Duke",3))
-                   
-sampleTreatment <- c(rep("Inf",9),rep("Mock",9),
-                     "Control", rep("OutInf",3),rep("Control",3),rep("OutInf",3),rep("Control",2),rep("OutInf",3),rep("Control",3))
-                         
+sampleVariety = c(
+  rep('SMira', 6),
+  rep('Duke', 6),
+  rep('SShona', 6),
+  rep('SMira', 3),
+  rep('Duke', 3),
+  rep('SShona', 3),
+  rep('SMira', 3),
+  rep('Duke', 3),
+  rep('SShona', 3)
+)
 
-sampleTable <- data.frame(sampleNames= sampleNames, 
+sampleTreatment = c(
+  rep('Control', 3),
+  rep('OutInf', 3),
+  rep('Control', 3),
+  rep('OutInf', 3),
+  rep('Control', 3),
+  rep('OutInf', 3),
+  rep('Inf', 9),
+  rep('Mock', 9)
+)
+
+sampleTable = data.frame(sampleNames= sampleNames, 
                           fileName = sampleFiles, 
                           replicate = sampleReplicate,
                           variety = sampleVariety,
@@ -121,14 +139,13 @@ sampleTable
 
 
 ```{r}
-sampleTable$replicate <- factor(sampleTable$replicate) 
-sampleTable$variety <- factor(sampleTable$variety)
-sampleTable$treatment <- factor(sampleTable$treatment)
+sampleTable$replicate = factor(sampleTable$replicate)
+sampleTable$variety = factor(sampleTable$variety)
+sampleTable$treatment = factor(sampleTable$treatment)
 ```
 
-
-
 ## Running DESeq2 with all the samples.
+
 ```{r}
 dds_Blight <- DESeqDataSetFromHTSeqCount(sampleTable = sampleTable, 
                                        directory = directory,
@@ -144,12 +161,12 @@ dds_Blight$treatment <- relevel(dds_Blight$treatment, ref = c("Mock"))
 dds_Blight <- DESeq(dds_Blight)
 resultsNames(dds_Blight) #it's the input for "name" and "constrast"
 ```
+
 ## Normalized counts
+
 ```{r}
 Norm.Counts <- counts(dds_Blight, normalized=TRUE)
 ```
-
-
 
 ## Gene count distribution per samples in leaf.
 
@@ -163,11 +180,10 @@ Distribution after normalization:
 boxplot(log2(counts(dds_Blight, normalized=TRUE)+1), range=0, las=2)
 ```
 
-
-
 ## Principal component analysis (PCA) of the leaf samples.
 
 Variance stabilization transformation:
+
 ```{r}
 vst_Blight <- vst(dds_Blight, blind=TRUE)
 ```
