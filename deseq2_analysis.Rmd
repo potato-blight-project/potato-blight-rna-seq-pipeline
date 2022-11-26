@@ -89,6 +89,9 @@ Preparing a table with the input files from HTSeq to run DESeq2 :
 ```{r}
 directory = './quantified'
 sampleFiles = grep('*count.txt', list.files(directory), value = TRUE)
+sampleFilesR = sort(sampleFiles[startsWith(sampleFiles, 'R')])
+sampleFilesA = sort(sampleFiles[startsWith(sampleFiles, 'A')])
+sampleFiles = c(sampleFilesR, sampleFilesA)
 sampleNames = c(
   'SMira_C1', 'SMira_C2', 'SMira_C3',
   'SMira_OI1', 'SMira_OI2', 'SMira_OI3',
