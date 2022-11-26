@@ -27,13 +27,12 @@ OUTPUT:
 
 Path of the folder for the inputs and outputs:
 ```{r}
-setwd("/rds/homes/o/oxe410/leachlj-potato-qtl-project/M6_Area/potato-blight-rna-seq-pipeline")
+setwd("/rds/projects/l/leachlj-potato-qtl-project/M6_Area/potato-blight-rna-seq-pipeline")
 ```
 
 
 Packages to employ for the analysis:
 ```{r}
-#library(apeglm)
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
@@ -42,7 +41,6 @@ BiocManager::install("apeglm")
 
 ```{r}
 library(apeglm)
-
 ```
 
 ```{r}
@@ -65,7 +63,7 @@ BiocManager::install("DEGreport")
 ```
 
 ```{r}
-#library(DESeq2)
+library(DESeq2)
 library(DEGreport)
 ```
 
