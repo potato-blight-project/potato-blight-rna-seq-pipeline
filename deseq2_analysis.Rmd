@@ -6,33 +6,43 @@ output:
   html_document:
     self_contained: false
 fontsize: 15pt
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
-The data come from potato leaves infected with Phythophtora infestans for 48 horas using a detached infection assay.
-Before this analysis the reads were mapped to the potato genome v6 with STAR, then counting with HTSeq. 
-Three potato varieties were infected: Sarpo Shona(Tolerant), Sarpo Mira(Tolerant) and Duke of York(Susceptible).
+The data come from potato leaves infected with Phythophtora infestans
+for 48 horas using a detached infection assay. Before this analysis the
+reads were mapped to the potato genome v6 with STAR, then counting with
+HTSeq. Three potato varieties were infected: Sarpo Shona(Tolerant),
+Sarpo Mira(Tolerant) and Duke of York(Susceptible).
 
-PURPOSE: This part of the transcriptomic analysis involve the normalization of the counts by DESeq2. After that we will plot a PCA to visualize the distribution of the samples, then find which genes are significant different between varieties during 48hours after infection. All the comparison will be done with against the mock (Infected-Area vs Mock or Out-infection-Area vs Mock). 
+PURPOSE: This part of the transcriptomic analysis involve the
+normalization of the counts by DESeq2. After that we will plot a PCA to
+visualize the distribution of the samples, then find which genes are
+significant different between varieties during 48hours after infection.
+All the comparison will be done with against the mock (Infected-Area vs
+Mock or Out-infection-Area vs Mock).
 
-INPUT: 
-- HTseq counts in "5.HTSEQ_blight".
-- Annotation info from the potato genone v6.1 in "Z:/1.PotatoDroughtOut_genomev6/4.GO_analysis/gProfile_FileHC.GeneTransID.Name.GO/potv6_Ath_potv404.RData".
+INPUT: - HTseq counts in "5.HTSEQ_blight". - Annotation info from the
+potato genone v6.1 in
+"Z:/1.PotatoDroughtOut_genomev6/4.GO_analysis/gProfile_FileHC.GeneTransID.Name.GO/potv6_Ath_potv404.RData".
 
-OUTPUT:  
+OUTPUT:\
 -"1.DESeq2_analysis_blight_infection48h.html" (After kniting)
--"1.DESeq2_analysis_blight_infection48h_files" --> Inside the folder "figure-html" are all the graphs produced with this code. (After kniting)
--All the files in the "2.DESeq2_output_48h" folder
-
-
+-"1.DESeq2_analysis_blight_infection48h_files" --\> Inside the folder
+"figure-html" are all the graphs produced with this code. (After
+kniting) -All the files in the "2.DESeq2_output_48h" folder
 
 Path of the folder for the inputs and outputs:
+
 ```{r}
 setwd("/rds/projects/l/leachlj-potato-qtl-project/M6_Area/potato-blight-rna-seq-pipeline")
 ```
 
-
 Packages to employ for the analysis:
-```{r}
+
+```{r message=FALSE, warning=FALSE}
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
@@ -49,13 +59,13 @@ library(apeglm)
 #install.packages("lasso2")
 ```
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 #this code works to install an older version of lasso2 from the archives
 packageurl <- "https://cran.r-project.org/src/contrib/Archive/lasso2/lasso2_1.2-22.tar.gz"
 install.packages(packageurl, repos=NULL, type="source")
 ```
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
@@ -84,6 +94,7 @@ options(bitmapType='cairo')
 ```
 
 Preparing a table with the input files from HTSeq to run DESeq2 :
+
 ```{r}
 directory = './quantified'
 sampleFiles = grep('*count.txt', list.files(directory), value = TRUE)
@@ -138,7 +149,6 @@ sampleTable = data.frame(sampleNames= sampleNames,
 sampleTable
 ```
 
-
 ```{r}
 sampleTable$replicate = factor(sampleTable$replicate)
 sampleTable$variety = factor(sampleTable$variety)
@@ -152,7 +162,9 @@ dds_Blight <- DESeqDataSetFromHTSeqCount(sampleTable = sampleTable,
                                        directory = directory,
                                        design = ~variety + treatment + variety:treatment)
 
-keep <- rowSums(counts(dds_Blight)) >= 10  #Removing genes whose counts is less than 10 in total aroung all the libraries
+# Removing genes whose counts is less than 10 in total around all the libraries
+# TODO: check why 10
+keep <- rowSums(counts(dds_Blight)) >= 10
 dds_Blight <- dds_Blight[keep,]
 
 dds_Blight$variety <- relevel(dds_Blight$variety, ref = c("Duke"))
@@ -172,11 +184,13 @@ Norm.Counts <- counts(dds_Blight, normalized=TRUE)
 ## Gene count distribution per samples in leaf.
 
 Distribution before normalization:
+
 ```{r}
 boxplot(log2(counts(dds_Blight)+1), range=0, las=2)
 ```
 
 Distribution after normalization:
+
 ```{r}
 boxplot(log2(counts(dds_Blight, normalized=TRUE)+1), range=0, las=2)
 ```
@@ -194,9 +208,10 @@ library(gridExtra)
 ```
 
 PCA of all leaf samples:
+
 ```{r, echo=FALSE, fig.height=7, fig.width=14}
 
-#n = 28727
+# n = 29393
 pcaVST <- plotPCA(vst_Blight, intgroup = c("treatment","variety"), returnData = TRUE, ntop = 29393)
 percentVar <- round(100*attr(pcaVST, "percentVar"))
 
@@ -209,7 +224,7 @@ SusTol_all <- qplot(PC1, PC2, color=treatment, shape=variety, data=pcaVST) +
   geom_text(aes(label=colnames(vst_Blight)),size = 3, vjust=1.5, hjust=1)
 
 
-#n = 28727
+# n = 1000
 pcaVST_n1000 <- plotPCA(vst_Blight, intgroup = c("treatment","variety"), returnData = TRUE, ntop = 1000)
 percentVar_n1000 <- round(100*attr(pcaVST_n1000, "percentVar"))
 
@@ -221,17 +236,18 @@ SusTol_n1000 <- qplot(PC1, PC2, color=treatment, shape=variety, data=pcaVST_n100
            geom_point()+
            geom_text(aes(label=colnames(vst_Blight)),size = 3, vjust=1.5, hjust=1)
 
-
 grid.arrange(SusTol_all, SusTol_n1000,
-             ncol = 2, widths =unit(c(160,160), c("mm","mm")), heights = unit(150, "mm"))
-
-
+             ncol=2, widths=unit(c(160,160), c("mm","mm")), heights=unit(150, "mm"))
 ```
-The distribution of the samples is very similar in both cases, by using all the normalized genesor using only the 1000 most variable genes. All replicates looks good, then it won't be necessary to remove any sample.
 
+The distribution of the samples is very similar in both cases, by using
+all the normalized genes or using only the 1000 most variable genes. All
+replicates looks good, then it won't be necessary to remove any sample.
 
 ## Heatmap and clustering of the samples:
+
 Heatmap of all leaf samples, after removing bad biological replicates:
+
 ```{r}
 sampleDists <- dist(t(assay(vst_Blight)))
 sampleDistMatrix <- as.matrix(sampleDists)
@@ -246,23 +262,26 @@ pheatmap(sampleDistMatrix,
          col=colors)
 ```
 
-
 ## Pairwise comparisons:
-#Tutorial: https://rstudio-pubs-static.s3.amazonaws.com/329027_593046fb6d7a427da6b2c538caf601e1.html
+
+#Tutorial:
+<https://rstudio-pubs-static.s3.amazonaws.com/329027_593046fb6d7a427da6b2c538caf601e1.html>
 
 Data to compare:
+
 ```{r}
-resultsNames(dds_Blight) #it's the input for "name" and "constrast"
+resultsNames(dds_Blight) #it's the input for "name" and "contrast"
 ```
 
-For the comparison:
-- Base_level: Duke / Mock
-- res: To get the pvalue and lfcThreshold=0,
-- default lfcThreshold=0
+For the comparison: - Base_level: Duke / Mock - res: To get the pvalue
+and lfcThreshold=0, - default lfcThreshold=0
 
-For the DE analysis, genes with the absolute value of the log2folchange more than 1 (|log2FC| > 1) will be selected.
+For the DE analysis, genes with the absolute value of the log2folchange
+more than 1 (\|log2FC\| \> 1) will be selected.
 
-Pairwise comparisons between samples (Inf/OutInf vs Mock) from the tolerant variety:
+Pairwise comparisons between samples (Inf/OutInf vs Mock) from the
+tolerant variety:
+
 ```{r}
 res.Duke.Out  <- results(dds_Blight, alpha = 0.05, contrast = list(c("treatment_OutInf_vs_Mock"))) 
 res.Duke.Inf  <- results(dds_Blight, alpha = 0.05, contrast = list(c("treatment_Inf_vs_Mock"))) 
@@ -273,7 +292,9 @@ res.SShona.Inf<- results(dds_Blight, alpha = 0.05, contrast = list(c("treatment_
 
 ```
 
-Pairwise comparisons between samples (tolerant vs Duke in Infect and OutInfect. area) from the tolerant variety:
+Pairwise comparisons between samples (tolerant vs Duke in Infect and
+OutInfect. area) from the tolerant variety:
+
 ```{r}
 res.SMira_vs_Duke.Out <- results(dds_Blight, alpha = 0.05, contrast = list(c("variety_SMira_vs_Duke" ,"varietySMira.treatmentOutInf"))) 
 res.SMira_vs_Duke.Inf <- results(dds_Blight, alpha = 0.05, contrast = list(c("variety_SMira_vs_Duke" ,"varietySMira.treatmentInf"))) 
@@ -281,19 +302,19 @@ res.SShona_vs_Duke.Out<- results(dds_Blight, alpha = 0.05, contrast = list(c("va
 res.SShona_vs_Duke.Inf<- results(dds_Blight, alpha = 0.05, contrast = list(c("variety_SShona_vs_Duke","varietySShona.treatmentInf"))) 
 ```
 
-
-
 ## Volcano plots:
 
-This plot allows as to observe the ranges of the foldchanges and visualize if a high or low amount of genes pass the threshold of |log2FC| > 1 & padj < 0.05.
-In this case, the foldchange was calculated from the OutINf/Mock and INf/Mock in each variety.
+This plot allows as to observe the ranges of the foldchanges and
+visualize if a high or low amount of genes pass the threshold of
+\|log2FC\| \> 1 & padj \< 0.05. In this case, the foldchange was
+calculated from the OutINf/Mock and INf/Mock in each variety.
 
 ```{r}
 library(gridExtra)
 ```
 
-
 In all the samples:
+
 ```{r, echo=FALSE, fig.height=20, fig.width=14}
 volcano.Duke.Inf <- EnhancedVolcano(res.Duke.Inf, 
                 lab = rownames(res.Duke.Inf),
@@ -349,9 +370,11 @@ grid.arrange(volcano.Duke.Inf, volcano.Duke.Out,
              ncol = 2, nrow = 3, widths =unit(c(160,160), c("mm","mm")), heights = unit(c(150,150,150), c("mm","mm","mm")))
 ```
 
-## Selecting differentially expressed genes (DEG): 
+## Selecting differentially expressed genes (DEG):
 
-(1)Inf/OutInf vs Mock in each variety. Selection: padj. < 0.05 & log2FC > 1:
+(1)Inf/OutInf vs Mock in each variety. Selection: padj. \< 0.05 & log2FC
+\> 1:
+
 ```{r}
 DEG.Duke.Out  <- res.Duke.Out %>% data.frame() %>% rownames_to_column(var="gene") %>% as_tibble() %>% filter(padj < 0.05) %>% filter(abs(log2FoldChange) > 1) 
 DEG.Duke.Inf  <- res.Duke.Inf %>% data.frame() %>% rownames_to_column(var="gene") %>% as_tibble() %>% filter(padj < 0.05) %>% filter(abs(log2FoldChange) > 1)
@@ -361,8 +384,9 @@ DEG.SShona.Out<- res.SShona.Out %>% data.frame() %>% rownames_to_column(var="gen
 DEG.SShona.Inf<- res.SShona.Inf %>% data.frame() %>% rownames_to_column(var="gene") %>% as_tibble() %>% filter(padj < 0.05) %>% filter(abs(log2FoldChange) > 1)
 ```
 
+(2)Tol vs Duke in infected or outinfected area. padj. \< 0.05 & log2FC
+\> 1:
 
-(2)Tol vs Duke in infected or outinfected area. padj. < 0.05 & log2FC > 1:
 ```{r}
 DEG.SMira_vs_Duke.Out <- res.SMira_vs_Duke.Out %>% data.frame() %>% rownames_to_column(var="gene") %>% as_tibble() %>% filter(padj < 0.05) %>% filter(abs(log2FoldChange) > 1) 
 DEG.SMira_vs_Duke.Inf <- res.SMira_vs_Duke.Inf %>% data.frame() %>% rownames_to_column(var="gene") %>% as_tibble() %>% filter(padj < 0.05) %>% filter(abs(log2FoldChange) > 1) 
@@ -370,12 +394,10 @@ DEG.SShona_vs_Duke.Out<- res.SShona_vs_Duke.Out %>% data.frame() %>% rownames_to
 DEG.SShona_vs_Duke.Inf<- res.SShona_vs_Duke.Inf %>% data.frame() %>% rownames_to_column(var="gene") %>% as_tibble() %>% filter(padj < 0.05) %>% filter(abs(log2FoldChange) > 1) 
 ```
 
-
-
-
 ## Venn diagrams
 
 Getting gene names of up and downregulated genes:
+
 ```{r}
 #Up and downregulated genes with a padj < 0.05 & |LFC| > 1: DEG...............................................................................................................
 DEG.Duke.Inf.UP     <- subset(DEG.Duke.Inf, log2FoldChange > 1)
@@ -413,15 +435,15 @@ DEG.SShona_vs_Duke.Out.DOWN   <- subset(DEG.SShona_vs_Duke.Out, log2FoldChange <
 
 ```
 
-
-
 Libraries to employ:
+
 ```{r}
 library(VennDiagram)
 library(gridExtra)
 ```
 
 (1) Venn diagrams of DEG in each variety, Outinfection and Infection:
+
 ```{r, echo=FALSE, fig.height=8, fig.width=13}
 #DEGs: |FC|>1, padj. <0.05:...........................................................................................................................................
 Venn.Duke.DEG.UP <- venn.diagram(filename = NULL, 
@@ -550,9 +572,9 @@ grid.arrange(gTree(children = Venn.Duke.DEG.UP),  gTree(children = Venn.Duke.DEG
 
 
 ```
- 
- 
+
 (2) Venn diagrams of DEG in each condition:
+
 ```{r, echo=FALSE, fig.height=8, fig.width=13}
 #DEGs (|FC|>1, padj. <0.05)
 Venn.OutInf.DEG.UP <- venn.diagram(filename = NULL, 
@@ -638,8 +660,6 @@ grid.arrange(gTree(children = Venn.OutInf.DEG.UP),  gTree(children = Venn.OutInf
 
 
 ```
- 
-
 
 ## Merging DEGs with their gene_description, A.thalina_GeneID, and potatov404geneID:
 
@@ -647,8 +667,9 @@ grid.arrange(gTree(children = Venn.OutInf.DEG.UP),  gTree(children = Venn.OutInf
 library(stringr)
 ```
 
+Data where the descriptions, Athaliana_geneID and v404 link of each gene
+is saved:
 
-Data where the descriptions, Athaliana_geneID and v404 link of each gene is saved:
 ```{r}
 #Genes ID / Names:
 load(file = "Z:/1.PotatoDroughtOut_genomev6/4.GO_analysis/gProfile_FileHC.GeneTransID.Name.GO/potv6_Ath_potv404.RData") 
@@ -659,10 +680,12 @@ colnames(potv6_Ath_potv404)[3] <- "gene"
 #head(GeneID.GeneDescrip)
 head(potv6_Ath_potv404)
 ```
-Remember that GeneID_potv6 was linked to Athaliana_ID, and it was linked to pot404: GeneID_potv6 -> Athaliana_ID <- pot404
 
+Remember that GeneID_potv6 was linked to Athaliana_ID, and it was linked
+to pot404: GeneID_potv6 -\> Athaliana_ID \<- pot404
 
 Adding annotation names to the result of the comparison:
+
 ```{r}
 #Adding the annotation to all the DEG_p:
 #DEG_p.Duke.Inf.annotation<- merge(DEG_p.Duke.Inf, potv6_Ath_potv404, by ="gene", all.x = T)
@@ -723,10 +746,11 @@ res.SShona_vs_Duke.Inf.annotation<- merge(res.SShona_vs_Duke.Inf.tb, potv6_Ath_p
 
 ```
 
-
 ## Selecting DEG and DEG_p that are only in the tolerant but not in the susceptible after 48 of infection:
 
-(1)Selecting DEG in the intersection of TOLs but not in Duke, with annotation(|log2FC| > 1 & padj. < 0.05)
+(1)Selecting DEG in the intersection of TOLs but not in Duke, with
+annotation(\|log2FC\| \> 1 & padj. \< 0.05)
+
 ```{r}
 #Gene list in "out of infection region" in both varieties:
 OnlyTol.Out.DEG.up.genes <- setdiff(intersect(DEG.SMira.Out.UP$gene, DEG.SShona.Out.UP$gene),DEG.Duke.Out.UP$gene)
@@ -774,7 +798,9 @@ OnlyTol.Inf.DEG.down.expr <- merge(merge(OnlyTol.Inf.DEG.down.genes,
 
 ```
 
-(2)Selecting DEG (|log2FC| > 1 & padj. < 0.05) not adding annotation:
+(2)Selecting DEG (\|log2FC\| \> 1 & padj. \< 0.05) not adding
+annotation:
+
 ```{r}
 #Intersect Sarpo Mira & Sarpo Shona but not Duke
 View(as.data.frame(setdiff(intersect(DEG.SMira.Inf.UP$gene,DEG.SShona.Inf.UP$gene),DEG.Duke.Inf.UP$gene)))
@@ -791,9 +817,8 @@ View(as.data.frame(setdiff(setdiff(DEG.SShona.Inf.DOWN$gene,DEG.SMira.Inf.DOWN$g
 
 ```
 
+(3)Selecting DEG_p (& padj. \< 0.05)
 
-
-(3)Selecting DEG_p (& padj. < 0.05)
 ```{r}
 OnlyTol.Out.DEG_p.up.genes <- setdiff(intersect(DEG_p.SMira.Out.UP$gene, DEG_p.SShona.Out.UP$gene),DEG_p.Duke.Out.UP$gene)
 OnlyTol.Out.DEG_p.up.genes <- as.data.frame(OnlyTol.Out.DEG_p.up.genes)
@@ -839,6 +864,7 @@ OnlyTol.Inf.DEG_p.down.annotation <- merge(merge(OnlyTol.Inf.DEG_p.down.genes,
 ```
 
 ## Selecting DEG in the intersection Inf48 & Out48, in each variety:
+
 ```{r}
 #Gene list in "out of infection region" in both varieties:
 SMira.Inf_Out.DEG.up.genes <- as.data.frame(intersect(DEG.SMira.Inf.UP$gene, DEG.SMira.Out.UP$gene));colnames(SMira.Inf_Out.DEG.up.genes)[1] <- "gene"#254
@@ -924,12 +950,6 @@ Duke.Inf_Out.DEG.DOWN.exp_2   <-  unique(Duke.Inf_Out.DEG.DOWN.exp[,-c(4,5,6,7,1
 
 ```
 
- 
- 
- 
- 
- 
-
 ## DEG from the comparison of each TOL vs Duke, in infected or outinfected area:
 
 ```{r}
@@ -954,19 +974,18 @@ colnames(TOL_vs_Duke.Inf.Out) <- c("gene","Gene_Name","Athaliana_geneID",
 
 ```
 
- 
- 
-## Plotting the normalized gene counts across the different time points. 
+## Plotting the normalized gene counts across the different time points.
+
 It is a graph for an individual gene.
 
 ```{r, echo=FALSE, fig.height=5, fig.width=20}
 plotCounts(dds_Blight, gene= "Soltu.DM.01G027350", intgroup=c("variety","treatment"))
 ```
 
-
 ## Selection of the top 20:
 
 Sarpo Mira (Inf/Out vs Mock):
+
 ```{r, echo=FALSE, fig.height=5, fig.width=20}
 DEG.SMira.Inf.annotation.up <- unique(subset(DEG.SMira.Inf.annotation,log2FoldChange > 1)[,c(1,3,7,8,10)])
 DEG.SMira.Out.annotation.up <- unique(subset(DEG.SMira.Out.annotation,log2FoldChange > 1)[,c(1,3,7,8,10)])
@@ -976,6 +995,7 @@ DEG.SMira.Out.annotation.down <- unique(subset(DEG.SMira.Out.annotation,log2Fold
 ```
 
 Duke (Inf/Out vs Mock):
+
 ```{r, echo=FALSE, fig.height=5, fig.width=20}
 DEG.Duke.Inf.annotation.up <- unique(subset(DEG.Duke.Inf.annotation,log2FoldChange > 1)[,c(1,3,7,8,10)])
 DEG.Duke.Out.annotation.up <- unique(subset(DEG.Duke.Out.annotation,log2FoldChange > 1)[,c(1,3,7,8,10)])
@@ -985,31 +1005,32 @@ DEG.Duke.Out.annotation.down <- unique(subset(DEG.Duke.Out.annotation,log2FoldCh
 ```
 
 Sarpo Mira vs Duke, Inf48
+
 ```{r}
 DEG.SMira_vs_Duke.Inf.annotation.up <- unique(subset(DEG.SMira_Duke.Inf.annotation, log2FoldChange > 1)[,c(1,3,7,8,10)])
 DEG.SMira_vs_Duke.Inf.annotation.down <- unique(subset(DEG.SMira_Duke.Inf.annotation, log2FoldChange < -1)[,c(1,3,7,8,10)])
 ```
 
 Sarpo Mira vs Duke, OutInf48h
+
 ```{r}
 DEG.SMira_vs_Duke.Out.annotation.up <- unique(subset(DEG.SMira_Duke.Out.annotation, log2FoldChange > 1)[,c(1,3,7,8,10)])
 DEG.SMira_vs_Duke.Out.annotation.down <- unique(subset(DEG.SMira_Duke.Out.annotation, log2FoldChange < -1)[,c(1,3,7,8,10)])
 ```
 
 Sarpo Shona vs Duke, Inf48h
+
 ```{r}
 DEG.SShona_vs_Duke.Inf.annotation.up <- unique(subset(DEG.SShona_Duke.Inf.annotation, log2FoldChange > 1)[,c(1,3,7,8,10)])
 DEG.SShona_vs_Duke.Inf.annotation.down <- unique(subset(DEG.SShona_Duke.Inf.annotation, log2FoldChange < -1)[,c(1,3,7,8,10)])
 ```
 
 Sarpo Mira vs Duke, OutInf48h
+
 ```{r}
 DEG.SShona_vs_Duke.Out.annotation.up <- unique(subset(DEG.SShona_Duke.Out.annotation, log2FoldChange > 1)[,c(1,3,7,8,10)])
 DEG.SShona_vs_Duke.Out.annotation.down <- unique(subset(DEG.SShona_Duke.Out.annotation, log2FoldChange < -1)[,c(1,3,7,8,10)])
 ```
-
-
-
 
 ## Saving data:
 
@@ -1078,6 +1099,3 @@ DEG.SShona_vs_Duke.Out.annotation.down <- unique(subset(DEG.SShona_Duke.Out.anno
 #write.csv(Norm.Counts, file= "NormalizedCounts.csv")
 
 ```
-
-
- 
