@@ -49,15 +49,6 @@ if (!require("BiocManager", quietly = TRUE))
 BiocManager::install("apeglm")
 ```
 
-```{r}
-library(apeglm)
-```
-
-```{r}
-#does not work - archived package
-#library(DESeq2)
-#install.packages("lasso2")
-```
 
 ```{r message=FALSE, warning=FALSE}
 #this code works to install an older version of lasso2 from the archives
@@ -66,19 +57,18 @@ install.packages(packageurl, repos=NULL, type="source")
 ```
 
 ```{r message=FALSE, warning=FALSE}
-if (!require("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-
 BiocManager::install("DEGreport")
 ```
 
 ```{r}
-library(DESeq2)
-library(DEGreport)
+BiocManager::install("EnhancedVolcano")
 ```
 
 ```{r}
-#library(EnhancedVolcano)
+library(apeglm)
+library(DESeq2)
+library(DEGreport)
+library(EnhancedVolcano)
 library(ggplot2)
 library(pheatmap)
 library(RColorBrewer)
@@ -86,6 +76,7 @@ library(pheatmap)
 library(dplyr) 
 library(tibble)
 library(data.table)
+library(gridExtra)
 ```
 
 ```{r}
@@ -203,10 +194,6 @@ Variance stabilization transformation:
 vst_Blight <- vst(dds_Blight, blind=TRUE)
 ```
 
-```{r}
-library(gridExtra)
-```
-
 PCA of all leaf samples:
 
 ```{r, echo=FALSE, fig.height=7, fig.width=14}
@@ -289,7 +276,6 @@ res.SMira.Out <- results(dds_Blight, alpha = 0.05, contrast = list(c("treatment_
 res.SMira.Inf <- results(dds_Blight, alpha = 0.05, contrast = list(c("treatment_Inf_vs_Mock","varietySMira.treatmentInf"))) 
 res.SShona.Out<- results(dds_Blight, alpha = 0.05, contrast = list(c("treatment_OutInf_vs_Mock","varietySShona.treatmentOutInf"))) 
 res.SShona.Inf<- results(dds_Blight, alpha = 0.05, contrast = list(c("treatment_Inf_vs_Mock","varietySShona.treatmentInf"))) 
-
 ```
 
 Pairwise comparisons between samples (tolerant vs Duke in Infect and
@@ -308,10 +294,6 @@ This plot allows as to observe the ranges of the foldchanges and
 visualize if a high or low amount of genes pass the threshold of
 \|log2FC\| \> 1 & padj \< 0.05. In this case, the foldchange was
 calculated from the OutINf/Mock and INf/Mock in each variety.
-
-```{r}
-library(gridExtra)
-```
 
 In all the samples:
 
@@ -439,7 +421,6 @@ Libraries to employ:
 
 ```{r}
 library(VennDiagram)
-library(gridExtra)
 ```
 
 (1) Venn diagrams of DEG in each variety, Outinfection and Infection:
@@ -568,9 +549,6 @@ grid.arrange(gTree(children = Venn.Duke.DEG.UP),  gTree(children = Venn.Duke.DEG
              top = "Nro. of Genes with a padj.<0.05 & |log2FC| > 1  -  Nro. of Genes with a padj.<0.05", ncol = 4, nrow = 3, 
              widths =unit(c(58,58,58,58), c("mm","mm","mm","mm")), 
              heights = unit(c(58,58,58), c("mm","mm","mm")))
-
-
-
 ```
 
 (2) Venn diagrams of DEG in each condition:
@@ -656,9 +634,6 @@ grid.arrange(gTree(children = Venn.OutInf.DEG.UP),  gTree(children = Venn.OutInf
              gTree(children = Venn.Inf.DEG_p.UP), gTree(children = Venn.Inf.DEG_p.DOWN),
              top = "Nro. of Genes with a padj.<0.05 & |log2FC| > 1      -      Nro. of Genes with a padj.<0.05",
              ncol = 4, nrow = 2, widths =unit(c(80,80,80,80), c("mm","mm","mm","mm")), heights = unit(c(80,80), c("mm","mm")))
-
-
-
 ```
 
 ## Merging DEGs with their gene_description, A.thalina_GeneID, and potatov404geneID:
@@ -672,7 +647,7 @@ is saved:
 
 ```{r}
 #Genes ID / Names:
-load(file = "Z:/1.PotatoDroughtOut_genomev6/4.GO_analysis/gProfile_FileHC.GeneTransID.Name.GO/potv6_Ath_potv404.RData") 
+load(file = "./analysis-data/potv6_Ath_potv404.RData") 
 #Table: potv6_Ath_potv404
 colnames(potv6_Ath_potv404)[3] <- "gene"
 
@@ -708,14 +683,11 @@ DEG.SMira.Out.annotation<- merge(DEG.SMira.Out, potv6_Ath_potv404, by ="gene", a
 DEG.SShona.Inf.annotation<- merge(DEG.SShona.Inf, potv6_Ath_potv404, by ="gene", all.x = T)
 DEG.SShona.Out.annotation<- merge(DEG.SShona.Out, potv6_Ath_potv404, by ="gene", all.x = T)
 
-
 #Adding the annotation to the comparison of TOL vs Duke:
 DEG.SMira_Duke.Out.annotation <- merge(DEG.SMira_vs_Duke.Out, potv6_Ath_potv404, by ="gene", all.x = T) 
 DEG.SMira_Duke.Inf.annotation <- merge(DEG.SMira_vs_Duke.Inf, potv6_Ath_potv404, by ="gene", all.x = T) 
 DEG.SShona_Duke.Out.annotation<- merge(DEG.SShona_vs_Duke.Out, potv6_Ath_potv404, by ="gene", all.x = T) 
 DEG.SShona_Duke.Inf.annotation<- merge(DEG.SShona_vs_Duke.Inf, potv6_Ath_potv404, by ="gene", all.x = T) 
-
-
 
 #Adding the annotation to the "res":
 res.Duke.Inf.tb   <- res.Duke.Inf %>% data.frame() %>% rownames_to_column(var="gene") %>% as_tibble()
@@ -742,8 +714,6 @@ res.SMira_vs_Duke.Out.annotation <- merge(res.SMira_vs_Duke.Out.tb, potv6_Ath_po
 res.SMira_vs_Duke.Inf.annotation <- merge(res.SMira_vs_Duke.Inf.tb, potv6_Ath_potv404, by ="gene", all.x = T)
 res.SShona_vs_Duke.Out.annotation<- merge(res.SShona_vs_Duke.Out.tb, potv6_Ath_potv404, by ="gene", all.x = T)
 res.SShona_vs_Duke.Inf.annotation<- merge(res.SShona_vs_Duke.Inf.tb, potv6_Ath_potv404, by ="gene", all.x = T)
-
-
 ```
 
 ## Selecting DEG and DEG_p that are only in the tolerant but not in the susceptible after 48 of infection:
@@ -813,8 +783,6 @@ View(as.data.frame(setdiff(setdiff(DEG.SMira.Inf.DOWN$gene,DEG.SShona.Inf.DOWN$g
 #DEG only Sarpo Shona
 View(as.data.frame(setdiff(setdiff(DEG.SShona.Inf.UP$gene,DEG.SMira.Inf.UP$gene),DEG.Duke.Inf.UP$gene)))
 View(as.data.frame(setdiff(setdiff(DEG.SShona.Inf.DOWN$gene,DEG.SMira.Inf.DOWN$gene),DEG.Duke.Inf.DOWN$gene)))
-
-
 ```
 
 (3)Selecting DEG_p (& padj. \< 0.05)
@@ -1030,6 +998,16 @@ Sarpo Mira vs Duke, OutInf48h
 ```{r}
 DEG.SShona_vs_Duke.Out.annotation.up <- unique(subset(DEG.SShona_Duke.Out.annotation, log2FoldChange > 1)[,c(1,3,7,8,10)])
 DEG.SShona_vs_Duke.Out.annotation.down <- unique(subset(DEG.SShona_Duke.Out.annotation, log2FoldChange < -1)[,c(1,3,7,8,10)])
+```
+
+## GSEA
+
+```{r}
+BiocManager::install("GSEABase")
+```
+
+```{r}
+
 ```
 
 ## Saving data:

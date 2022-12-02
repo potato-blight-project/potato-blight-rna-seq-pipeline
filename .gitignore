@@ -4,3 +4,5 @@ archive/
 trimmed/
 aligned/
 quantified/
+analysis-data/
+.Rproj.user
