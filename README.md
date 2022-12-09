@@ -39,3 +39,7 @@ $ sbatch align_reads.sh
 > Software: htseq-count
 
 The script will count how many reads map to each feature (intervals on a chromosome).
+
+## DESeq2 analysis
+
+TODO.
