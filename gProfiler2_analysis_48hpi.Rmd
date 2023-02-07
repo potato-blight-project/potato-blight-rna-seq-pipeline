@@ -1,0 +1,335 @@
+---
+title: "Transcriptomic analysis of potato samples under drought stress to do GO analysis of DEGs with gprofiler"
+author: "Patricia Ponce"
+date: "June, 2021"
+output: 
+  html_document:
+    self_contained: false
+fontsize: 13pt
+---
+  
+https://f1000research.com/articles/9-709  
+
+PURPOSE: Identify enriched GO terms in the DEGs (separating up and downregulated genes).
+
+INPUT:
+-Data for potato genome-annotation v6: .../SharedGenomeFilesV6/gProfile-GenomeData-Input/gProfile-GenomeData-Input/GO_CC_MF_BP.zip
+#the below file is the saved output from your DESeq2 notebook:
+-DEGs in leaf: ".../DEG_48h_vs_Mock_UpDown.RData")"
+
+
+Path of the folder for the inputs and outputs, modify as needed:
+```{r}
+setwd("Y:/7.GOanalysis_blight/")
+```
+
+Packages to employ for the analysis:
+```{r}
+library(gprofiler2)
+```
+
+```{r}
+token = upload_GMT_file(gmtfile = "./analysis-data/GO_CC_MF_BP.zip")
+```
+
+## 1.Input DEGs
+
+NOTE: do not run when using Rstudio
+
+```{r}
+#load(file = "../6.DEAnalysis_blight/DEG_48h_vs_Mock.RData")
+load(file = "../7.DEAnalysis_blight/2.DESeq2_output_48h/DEG_48h_vs_Mock_UpDown.RData")
+#Files:
+#DEG.Duke.Inf.UP, DEG.Duke.Inf.DOWN
+#DEG.Duke.Out.UP, DEG.Duke.Out.DOWN
+#DEG.SMira.Inf.UP, DEG.SMira.Inf.DOWN
+#DEG.SMira.Out.UP, DEG.SMira.Out.DOWN
+#DEG.SShona.Inf.UP, DEG.SShona.Inf.DOWN
+#DEG.SShona.Out.UP, DEG.SShona.Out.DOWN
+```
+
+```{r}
+DEG.Duke.48.Inf.UP.genes     <- DEG.Duke.Inf.UP$gene
+DEG.Duke.48.Inf.DOWN.genes   <- DEG.Duke.Inf.DOWN$gene
+DEG.SMira.48.Inf.UP.genes    <- DEG.SMira.Inf.UP$gene
+DEG.SMira.48.Inf.DOWN.genes  <- DEG.SMira.Inf.DOWN$gene
+DEG.SShona.48.Inf.UP.genes   <- DEG.SShona.Inf.UP$gene
+DEG.SShona.48.Inf.DOWN.genes <- DEG.SShona.Inf.DOWN$gene
+
+DEG.Duke.48.Out.UP.genes     <- DEG.Duke.Out.UP$gene
+DEG.Duke.48.Out.DOWN.genes   <- DEG.Duke.Out.DOWN$gene
+DEG.SMira.48.Out.UP.genes    <- DEG.SMira.Out.UP$gene
+DEG.SMira.48.Out.DOWN.genes  <- DEG.SMira.Out.DOWN$gene
+DEG.SShona.48.Out.UP.genes   <- DEG.SShona.Out.UP$gene
+DEG.SShona.48.Out.DOWN.genes <- DEG.SShona.Out.DOWN$gene
+```
+
+
+## 2.Running gProfile:
+
+Leaf samples individual time points:
+
+```{r}
+#Tolerant samples:
+Duke.48.Inf = gost(
+  query = list("up-regulated" = DEG.Duke.48.Inf.UP.genes, "down-regulated" = DEG.Duke.48.Inf.DOWN.genes),                                              correction_method = "bonferroni",
+  ordered_query = FALSE,
+  organism = token)
+
+Duke.48.Out = gost(query = list("up-regulated" = DEG.Duke.48.Out.UP.genes, "down-regulated" = DEG.Duke.48.Out.DOWN.genes),                                                correction_method = "bonferroni",
+                  ordered_query = FALSE,
+                  organism = token)
+
+
+SShona.48.Inf = gost(query = list("up-regulated" = DEG.SShona.48.Inf.UP.genes, "down-regulated" = DEG.SShona.48.Inf.DOWN.genes),                                                correction_method = "bonferroni",
+                  ordered_query = FALSE,
+                  organism = token)
+
+SShona.48.Out = gost(query = list("up-regulated" = DEG.SShona.48.Out.UP.genes, "down-regulated" = DEG.SShona.48.Out.DOWN.genes),                                                correction_method = "bonferroni",
+                  ordered_query = FALSE,
+                  organism = token)
+
+
+SMira.48.Inf = gost(query = list("up-regulated" = DEG.SMira.48.Inf.UP.genes, "down-regulated" = DEG.SMira.48.Inf.DOWN.genes),                                             correction_method = "bonferroni",
+                  ordered_query = FALSE,
+                  organism = token)
+
+SMira.48.Out = gost(query = list("up-regulated" = DEG.SMira.48.Out.UP.genes, "down-regulated" = DEG.SMira.48.Out.DOWN.genes),                                             correction_method = "bonferroni",
+                  ordered_query = FALSE,
+                  organism = token)
+
+```
+
+
+The result are store in Tol.CT1$result, where:
+- the pvalue is the hypergeometric p-value after correction for multiple testing.
+- term_size - number of genes that are annotated to the term
+- intersection_size - the number of genes in the input query that are annotated to the corresponding term
+- precision - the proportion of genes in the input (query) list that are annotated to the function (defined as intersection_size/query_size)
+- recall - the proportion of functionally annotated genes that the query recovers (defined as intersection_size/term_size)
+
+Output:
+```{r}
+# head(SMira.Control$result)
+# head(SShona.Control$result)
+```
+
+
+## 3.Making plot:
+
+```{r}
+gostplot(Duke.48.Inf, capped = TRUE, interactive = TRUE,
+         pal = c('GO_BP' = "#dc3912", 'GO_CC' = "#ff9900", 'GO_MF' = "#109618"))
+```
+
+
+```{r}
+gostplot(Duke.48.Out, capped = TRUE, interactive = TRUE,
+         pal = c('GO_BP' = "#dc3912", 'GO_CC' = "#ff9900", 'GO_MF' = "#109618"))
+```
+
+
+```{r}
+gostplot(SShona.48.Inf, capped = TRUE, interactive = TRUE,
+         pal = c('GO_BP' = "#dc3912", 'GO_CC' = "#ff9900", 'GO_MF' = "#109618"))
+```
+
+
+```{r}
+gostplot(SShona.48.Out, capped = TRUE, interactive = TRUE,
+         pal = c('GO_BP' = "#dc3912", 'GO_CC' = "#ff9900", 'GO_MF' = "#109618"))
+```
+
+
+```{r}
+gostplot(SMira.48.Inf, capped = TRUE, interactive = TRUE,
+         pal = c('GO_BP' = "#dc3912", 'GO_CC' = "#ff9900", 'GO_MF' = "#109618"))
+```
+
+
+```{r}
+gostplot(SMira.48.Out, capped = TRUE, interactive = TRUE,
+         pal = c('GO_BP' = "#dc3912", 'GO_CC' = "#ff9900", 'GO_MF' = "#109618"))
+```
+
+
+
+## 4.Generating tables:
+
+publish_gosttable(SMira.Control, 
+                        highlight_terms = SMira.Control$result,
+                        use_colors = TRUE, 
+                        show_columns = c("source", "term_name", "term_size", "intersection_size"),
+                        filename = "SMira_vs_Duke_Control.png")
+                       
+
+
+
+```{r}
+publish_gosttable(Duke.48.Inf, 
+                        highlight_terms = Duke.48.Inf$result,
+                        use_colors = TRUE, 
+                        show_columns = c("source", "term_name", "term_size", "intersection_size"),
+                        filename = "Duke_48Inf_vs_Mock.png")
+                       
+publish_gosttable(Duke.48.Out, 
+                        highlight_terms = Duke.48.Out$result,
+                        use_colors = TRUE, 
+                        show_columns = c("source", "term_name", "term_size", "intersection_size"),
+                        filename = "Duke_48Out_vs_Mock.png")
+
+publish_gosttable(SShona.48.Inf, 
+                        highlight_terms = SShona.48.Inf$result,
+                        use_colors = TRUE, 
+                        show_columns = c("source", "term_name", "term_size", "intersection_size"),
+                        filename = "SShona_48Inf_vs_Mock.png")
+                       
+publish_gosttable(SShona.48.Out, 
+                        highlight_terms = SShona.48.Out$result,
+                        use_colors = TRUE, 
+                        show_columns = c("source", "term_name", "term_size", "intersection_size"),
+                        filename = "SShona_48Out_vs_Mock.png")
+
+publish_gosttable(SMira.48.Inf, 
+                        highlight_terms = SMira.48.Inf$result,
+                        use_colors = TRUE, 
+                        show_columns = c("source", "term_name", "term_size", "intersection_size"),
+                        filename = "SMira_48Inf_vs_Mock.png")
+                       
+publish_gosttable(SMira.48.Out, 
+                        highlight_terms = SMira.48.Out$result,
+                        use_colors = TRUE, 
+                        show_columns = c("source", "term_name", "term_size", "intersection_size"),
+                        filename = "SMira_48Out_vs_Mock.png")
+```                      
+
+
+
+## 5.Generating graphs:
+
+#Libraries
+```{r}
+library(clusterProfiler)
+library(enrichplot)
+library(DOSE) 
+library(ggplot2)
+```
+
+
+A)Formatting the data:
+
+```{r}
+Duke.48.Inf$result[1] <- sub("up-regulated", "up", as.data.frame(Duke.48.Inf$result[,c(-14)])$query)
+Duke.48.Inf$result[1] <- sub("down-regulated", "down", as.data.frame(Duke.48.Inf$result[,c(-14)])$query)
+
+Duke.48.Out$result[1] <- sub("up-regulated", "up", as.data.frame(Duke.48.Out$result[,c(-14)])$query)
+Duke.48.Out$result[1] <- sub("down-regulated", "down", as.data.frame(Duke.48.Out$result[,c(-14)])$query)
+
+
+SShona.48.Inf$result[1] <- sub("up-regulated", "up", as.data.frame(SShona.48.Inf$result[,c(-14)])$query)
+SShona.48.Inf$result[1] <- sub("down-regulated", "down", as.data.frame(SShona.48.Inf$result[,c(-14)])$query)
+
+SShona.48.Out$result[1] <- sub("up-regulated", "up", as.data.frame(SShona.48.Out$result[,c(-14)])$query)
+SShona.48.Out$result[1] <- sub("down-regulated", "down", as.data.frame(SShona.48.Out$result[,c(-14)])$query)
+
+
+SMira.48.Inf$result[1] <- sub("up-regulated", "up", as.data.frame(SMira.48.Inf$result[,c(-14)])$query)
+SMira.48.Inf$result[1] <- sub("down-regulated", "down", as.data.frame(SMira.48.Inf$result[,c(-14)])$query)
+
+SMira.48.Out$result[1] <- sub("up-regulated", "up", as.data.frame(SMira.48.Out$result[,c(-14)])$query)
+SMira.48.Out$result[1] <- sub("down-regulated", "down", as.data.frame(SMira.48.Out$result[,c(-14)])$query)
+
+
+
+
+Duke.48.Inf$result[14] <- c(rep("Duke.48Inf",55)) #dim 55x14
+colnames(Duke.48.Inf$result)[14] <- "Variety"
+
+SShona.48.Inf$result[14] <- c(rep("Sarpo Shona.48Inf",22)) #dim 22x14
+colnames(SShona.48.Inf$result)[14] <- "Variety"
+
+SMira.48.Inf$result[14] <- c(rep("Sarpo Mira.48Inf",35)) #dim 35x14
+colnames(SMira.48.Inf$result)[14] <- "Variety"
+
+
+
+Duke.48.Out$result[14] <- c(rep("Duke.48Out",37)) #dim 37x14
+colnames(Duke.48.Out$result)[14] <- "Variety"
+
+SShona.48.Out$result[14] <- c(rep("Sarpo Shona.48Out",22)) #dim 22x14
+colnames(SShona.48.Out$result)[14] <- "Variety"
+
+SMira.48.Out$result[14] <- c(rep("Sarpo Mira.48Out",43)) #dim 43x14
+colnames(SMira.48.Out$result)[14] <- "Variety"
+
+
+
+Inf48_vs_Mock <- rbind(rbind(Duke.48.Inf$result, SShona.48.Inf$result), SMira.48.Inf$result)
+Out48_vs_Mock <- rbind(rbind(Duke.48.Out$result, SShona.48.Out$result), SMira.48.Out$result)
+
+
+Inf48_vs_Mock.BP <- subset(Inf48_vs_Mock, source == "GO_BP")
+Inf48_vs_Mock.CC <- subset(Inf48_vs_Mock, source == "GO_CC")
+Inf48_vs_Mock.MF <- subset(Inf48_vs_Mock, source == "GO_MF")
+
+Out48_vs_Mock.BP <- subset(Out48_vs_Mock, source == "GO_BP")
+Out48_vs_Mock.CC <- subset(Out48_vs_Mock, source == "GO_CC")
+Out48_vs_Mock.MF <- subset(Out48_vs_Mock, source == "GO_MF")
+```
+
+
+
+B) Input for the plot:
+```{r}
+dataframeInput = Out48_vs_Mock.BP
+```
+
+
+## C) Ordering data for plot
+No modify nothing from here:
+```{r}
+gp_mod = dataframeInput[,c("query", "source", "term_id",
+                                "term_name", "p_value", "query_size", 
+                                "intersection_size", "term_size", "precision", "Variety")]
+
+gp_mod$Description <- paste(gp_mod$term_id, gp_mod$term_name, sep = ":")
+gp_mod <- gp_mod[,c(-4)]
+
+
+#gp_mod$GeneRatio (intersection_size/query_size) = gp_mod$precision 
+
+names(gp_mod) = c("Cluster", "Category", "ID", "p.adjust", 
+                  "query_size", "Count", "term_size",
+                  "GeneRatio", "Variety","Description")
+
+# define as compareClusterResult object
+gp_mod_cluster = new("compareClusterResult", compareClusterResult = gp_mod)
+
+```
+
+
+#Biological Process
+#Cellular Component
+#Molecular Function
+
+## Making and saving plot
+
+Here it is necessary to change the name of the file and the title of the graph:
+```{r}
+jpeg("Out48_vs_Mock.BP.jpg", width = 4000, height = 4000, res = 300)
+
+enrichplot::dotplot(gp_mod_cluster, by = "count",  color = "p.adjust", 
+                    font.size = 12, split = "Cluster",
+                    showCategory = 100,
+                    #includeAll = FALSE,
+                    title = "DEGs 48hpi Out-Intected Area vs Mock: Biological Process") +
+                     ggplot2::facet_grid(~Variety)+
+                    theme(strip.text.x = element_text(size = 13)) #colour = "orange"
+
+dev.off()
+```
+
+
+Inf48_vs_Mock.BP, CC: width = 4000, height = 2000, res = 300)
+
+"Inf48_vs_Mock.MF.jpg", width = 7000, height = 4000, res = 300)
