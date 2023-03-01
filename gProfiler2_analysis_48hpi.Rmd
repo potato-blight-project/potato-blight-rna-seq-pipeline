@@ -17,10 +17,8 @@ INPUT:
 #the below file is the saved output from your DESeq2 notebook:
 -DEGs in leaf: ".../DEG_48h_vs_Mock_UpDown.RData")"
 
-
-Path of the folder for the inputs and outputs, modify as needed:
 ```{r}
-setwd("Y:/7.GOanalysis_blight/")
+setwd("/rds/projects/l/leachlj-potato-qtl-project/M6_Area/potato-blight-rna-seq-pipeline")
 ```
 
 Packages to employ for the analysis:
@@ -37,33 +35,24 @@ token = upload_GMT_file(gmtfile = "./analysis-data/GO_CC_MF_BP.zip")
 NOTE: do not run when using Rstudio
 
 ```{r}
-#load(file = "../6.DEAnalysis_blight/DEG_48h_vs_Mock.RData")
-load(file = "../7.DEAnalysis_blight/2.DESeq2_output_48h/DEG_48h_vs_Mock_UpDown.RData")
-#Files:
-#DEG.Duke.Inf.UP, DEG.Duke.Inf.DOWN
-#DEG.Duke.Out.UP, DEG.Duke.Out.DOWN
-#DEG.SMira.Inf.UP, DEG.SMira.Inf.DOWN
-#DEG.SMira.Out.UP, DEG.SMira.Out.DOWN
-#DEG.SShona.Inf.UP, DEG.SShona.Inf.DOWN
-#DEG.SShona.Out.UP, DEG.SShona.Out.DOWN
+load(file = "results/deseq2_analysis.RData")
 ```
 
 ```{r}
-DEG.Duke.48.Inf.UP.genes     <- DEG.Duke.Inf.UP$gene
-DEG.Duke.48.Inf.DOWN.genes   <- DEG.Duke.Inf.DOWN$gene
-DEG.SMira.48.Inf.UP.genes    <- DEG.SMira.Inf.UP$gene
-DEG.SMira.48.Inf.DOWN.genes  <- DEG.SMira.Inf.DOWN$gene
-DEG.SShona.48.Inf.UP.genes   <- DEG.SShona.Inf.UP$gene
-DEG.SShona.48.Inf.DOWN.genes <- DEG.SShona.Inf.DOWN$gene
+DEG.Duke.48.Inf.UP.genes     <- up_down_degs$DEG.Duke.Inf.UP$gene
+DEG.Duke.48.Inf.DOWN.genes   <- up_down_degs$DEG.Duke.Inf.DOWN$gene
+DEG.SMira.48.Inf.UP.genes    <- up_down_degs$DEG.SMira.Inf.UP$gene
+DEG.SMira.48.Inf.DOWN.genes  <- up_down_degs$DEG.SMira.Inf.DOWN$gene
+DEG.SShona.48.Inf.UP.genes   <- up_down_degs$DEG.SShona.Inf.UP$gene
+DEG.SShona.48.Inf.DOWN.genes <- up_down_degs$DEG.SShona.Inf.DOWN$gene
 
-DEG.Duke.48.Out.UP.genes     <- DEG.Duke.Out.UP$gene
-DEG.Duke.48.Out.DOWN.genes   <- DEG.Duke.Out.DOWN$gene
-DEG.SMira.48.Out.UP.genes    <- DEG.SMira.Out.UP$gene
-DEG.SMira.48.Out.DOWN.genes  <- DEG.SMira.Out.DOWN$gene
-DEG.SShona.48.Out.UP.genes   <- DEG.SShona.Out.UP$gene
-DEG.SShona.48.Out.DOWN.genes <- DEG.SShona.Out.DOWN$gene
+DEG.Duke.48.Out.UP.genes     <- up_down_degs$DEG.Duke.Out.UP$gene
+DEG.Duke.48.Out.DOWN.genes   <- up_down_degs$DEG.Duke.Out.DOWN$gene
+DEG.SMira.48.Out.UP.genes    <- up_down_degs$DEG.SMira.Out.UP$gene
+DEG.SMira.48.Out.DOWN.genes  <- up_down_degs$DEG.SMira.Out.DOWN$gene
+DEG.SShona.48.Out.UP.genes   <- up_down_degs$DEG.SShona.Out.UP$gene
+DEG.SShona.48.Out.DOWN.genes <- up_down_degs$DEG.SShona.Out.DOWN$gene
 ```
-
 
 ## 2.Running gProfile:
 

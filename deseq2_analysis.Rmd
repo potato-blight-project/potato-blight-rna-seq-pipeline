@@ -59,7 +59,6 @@ if (!require("BiocManager", quietly = TRUE))
 BiocManager::install("apeglm")
 ```
 
-
 ```{r message=FALSE, warning=FALSE}
 #this code works to install an older version of lasso2 from the archives
 packageurl <- "https://cran.r-project.org/src/contrib/Archive/lasso2/lasso2_1.2-22.tar.gz"
@@ -83,7 +82,7 @@ library(ggplot2)
 library(pheatmap)
 library(RColorBrewer)
 library(pheatmap)
-library(dplyr) 
+library(dplyr)
 library(tibble)
 library(data.table)
 library(gridExtra)
@@ -92,13 +91,37 @@ library(VennDiagram)
 ```
 
 ```{r}
-source('./functions.R')
+source('./helpers.R')
+source('./plots.R')
 source('./comparisons.R')
+source('./degs.R')
 ```
 
 ```{r}
 #specify this to enable plotting to work
 options(bitmapType='cairo')
+```
+
+# Setup input analysis data directory
+
+```{r}
+# TODO
+```
+
+# Setup results directory
+
+```{r}
+if (!dir.exists("results")) {
+  dir.create("results")
+}
+
+if (!dir.exists("results/different-treatments-within-varieties")) {
+  dir.create("results/different-treatments-within-varieties")
+}
+
+if (!dir.exists("results/same-treatment-between-varieties")) {
+  dir.create("results/same-treatment-between-varieties")
+}
 ```
 
 # Input configuration
@@ -176,6 +199,8 @@ varieties <- list(
     type="tolerant"
   )
 )
+
+regulation_directions = c("UP", "DOWN")
 ```
 
 # Run DESeq2 with all the samples
@@ -283,14 +308,14 @@ pheatmap(sampleDistMatrix,
          col=colors)
 ```
 
-# Pairwise comparisons
+# Setup comparisons
 
 > Tutorial: <https://rstudio-pubs-static.s3.amazonaws.com/329027_593046fb6d7a427da6b2c538caf601e1.html>
 
 Data to compare:
 
 ```{r}
-resultsNames(dds_Blight) # it's the input for "name" and "contrast"
+resultsNames(dds_Blight) # input for "name" and "contrast"
 ```
 
 For the comparison: - Base_level: Duke / Mock - res: To get the pvalue
@@ -313,23 +338,13 @@ comparisons = list(
   res.SMira_vs_Duke.Out = c("variety_SMira_vs_Duke" ,"varietySMira.treatmentOutInf"),
   res.SMira_vs_Duke.Inf = c("variety_SMira_vs_Duke" ,"varietySMira.treatmentInf"),
   res.SShona_vs_Duke.Out = c("variety_SShona_vs_Duke","varietySShona.treatmentOutInf"),
-  res.SShona_vs_Duke.Inf = c("variety_SShona_vs_Duke","varietySShona.treatmentInf")
+  res.SShona_vs_Duke.Inf = c("variety_SShona_vs_Duke","varietySShona.treatmentInf"),
+  
+  res.SMira_vs_Duke.Control = c("variety_SMira_vs_Duke" ,"varietySMira.treatmentControl"),
+  res.SShona_vs_Duke.Control = c("variety_SShona_vs_Duke" ,"varietySShona.treatmentControl")
 )
 
 res <- create_comparisons(dds_Blight, comparisons)
-```
-
-# Volcano plots
-
-This plot allows as to observe the ranges of the foldchanges and
-visualize if a high or low amount of genes pass the threshold of
-\|log2FC\| \> 1 & padj \< 0.05. In this case, the foldchange was
-calculated from the OutINf/Mock and INf/Mock in each variety.
-
-In all the samples:
-
-```{r, echo=FALSE, fig.height=20, fig.width=14}
-volcano_plots_from_comparisons(res, function(name) { !grepl("_vs_", name) })
 ```
 
 # Selecting Differentially Expressed Genes (DEGs)
@@ -342,137 +357,6 @@ degs = create_degs(res)
 
 ```{r}
 up_down_degs = create_up_down_degs(degs)
-```
-
-# Venn diagrams
-
-(1) Venn diagrams of DEG in each variety, Outinfection and Infection:
-
-```{r, echo=FALSE, fig.height=8, fig.width=13}
-#DEGs: |FC|>1, padj. <0.05:...........................................................................................................................................
-Venn.Duke.DEG.UP <- venn_diagram_2way(
-  list(Duke_Out=DEG.Duke.Out.UP$gene, Duke_Inf=DEG.Duke.Inf.UP$gene),
-  "Duke of York - Up"
-)
-
-Venn.Duke.DEG.DOWN <- venn_diagram_2way(
-  list(Duke_Out=DEG.Duke.Out.DOWN$gene, Duke_Inf=DEG.Duke.Inf.DOWN$gene),
-  "Duke of York - Down"
-)
-
-Venn.SMira.DEG.UP <- venn_diagram_2way(
-  list(S.Mira_Out=DEG.SMira.Out.UP$gene, S.Mira_Inf=DEG.SMira.Inf.UP$gene),
-  "Sarpo Mira - Up"
-)
-
-Venn.SMira.DEG.DOWN <- venn_diagram_2way(
-  list(S.Mira_Out=DEG.SMira.Out.DOWN$gene, S.Mira_Inf=DEG.SMira.Inf.DOWN$gene),
-  "Sarpo Mira - Down"
-)
-
-Venn.SShona.DEG.UP <- venn_diagram_2way(
-  list(S.Shona_Out=DEG.SShona.Out.UP$gene, S.Shona_Inf=DEG.SShona.Inf.UP$gene),
-  "Sarpo Shona - Up"
-)
-
-Venn.SShona.DEG.DOWN <- venn_diagram_2way(
-  list(S.Shona_Out=DEG.SShona.Out.DOWN$gene, S.Shona_Inf=DEG.SShona.Inf.DOWN$gene),
-  "Sarpo Shona - Down"
-)
-
-#DEGs for only padj. <0.05, not selected by log2FC:...........................................................................................................................
-Venn.Duke.DEG_p.UP <- venn_diagram_2way(
-  list(Duke_Out=DEG_p.Duke.Out.UP$gene, Duke_Inf=DEG_p.Duke.Inf.UP$gene),
-  "Duke of York - Up"
-)
-
-Venn.Duke.DEG_p.DOWN <- venn_diagram_2way(
-  list(Duke_Out=DEG_p.Duke.Out.DOWN$gene, Duke_Inf=DEG_p.Duke.Inf.DOWN$gene),
-  "Duke of York - Down"
-)
-
-Venn.SMira.DEG_p.UP <- venn_diagram_2way(
-  list(S.Mira_Out=DEG_p.SMira.Out.UP$gene, S.Mira_Inf=DEG_p.SMira.Inf.UP$gene),
-  "Sarpo Mira - Up"
-)
-
-Venn.SMira.DEG_p.DOWN <- venn_diagram_2way(
-  list(S.Mira_Out=DEG_p.SMira.Out.DOWN$gene, S.Mira_Inf=DEG_p.SMira.Inf.DOWN$gene),
-  "Sarpo Mira - Down"
-)
-
-Venn.SShona.DEG_p.UP <- venn_diagram_2way(
-  list(S.Shona_Out=DEG_p.SShona.Out.UP$gene, S.Shona_Inf=DEG_p.SShona.Inf.UP$gene),
-  "Sarpo Shona - Up"
-)
-
-Venn.SShona.DEG_p.DOWN <- venn_diagram_2way(
-  list(S.Shona_Out=DEG_p.SShona.Out.DOWN$gene, S.Shona_Inf=DEG_p.SShona.Inf.DOWN$gene),
-  "Sarpo Shona - Down"
-)
-
-grid.arrange(gTree(children = Venn.Duke.DEG.UP),  gTree(children = Venn.Duke.DEG.DOWN), 
-             gTree(children = Venn.Duke.DEG_p.UP),  gTree(children = Venn.Duke.DEG_p.DOWN),
-             gTree(children = Venn.SMira.DEG.UP), gTree(children = Venn.SMira.DEG.DOWN),
-             gTree(children = Venn.SMira.DEG_p.UP), gTree(children = Venn.SMira.DEG_p.DOWN),
-             gTree(children = Venn.SShona.DEG.UP),gTree(children = Venn.SShona.DEG.DOWN),
-             gTree(children = Venn.SShona.DEG_p.UP),gTree(children = Venn.SShona.DEG_p.DOWN),
-             top = "Nro. of Genes with a padj.<0.05 & |log2FC| > 1  -  Nro. of Genes with a padj.<0.05", ncol = 4, nrow = 3, 
-             widths =unit(c(58,58,58,58), c("mm","mm","mm","mm")), 
-             heights = unit(c(58,58,58), c("mm","mm","mm")))
-```
-
-(2) Venn diagrams of DEG in each condition:
-
-```{r, echo=FALSE, fig.height=8, fig.width=13}
-#DEGs (|FC|>1, padj. <0.05)
-Venn.OutInf.DEG.UP <- venn_diagram_3way(
-  list(Duke_Out=DEG.Duke.Out.UP$gene, S.Mira_Out=DEG.SMira.Out.UP$gene, S.Shona_Out=DEG.SShona.Out.UP$gene),
-  "Out of Infection - Up"
-)
-             
-Venn.OutInf.DEG.DOWN <- venn_diagram_3way(
-  list(Duke_Out=DEG.Duke.Out.DOWN$gene, S.Mira_Out=DEG.SMira.Out.DOWN$gene, S.Shona_Out=DEG.SShona.Out.DOWN$gene),
-  "Out of Infection - Down"
-)
-             
-Venn.Inf.DEG.UP <- venn_diagram_3way(
-  list(Duke_Inf=DEG.Duke.Inf.UP$gene, S.Mira_Inf=DEG.SMira.Inf.UP$gene, S.Shona_Inf=DEG.SShona.Inf.UP$gene),
-  "Infection - Up"
-)
-
-Venn.Inf.DEG.DOWN <- venn_diagram_3way(
-  list(Duke_Inf=DEG.Duke.Inf.DOWN$gene, S.Mira_Inf=DEG.SMira.Inf.DOWN$gene, S.Shona_Inf=DEG.SShona.Inf.DOWN$gene),
-  "Infection - Down"
-)
-
-#DEGs but only seleceted by padj. <0.05:
-Venn.OutInf.DEG_p.UP <- venn_diagram_3way(
-  list(Duke_Out=DEG_p.Duke.Out.UP$gene, SMira_Out=DEG_p.SMira.Out.UP$gene, SShona_Out=DEG_p.SShona.Out.UP$gene),
-  "Out of Infection - Up - any log2FC"
-)
-
-Venn.OutInf.DEG_p.DOWN <- venn_diagram_3way(
-  list(Duke_Out=DEG_p.Duke.Out.DOWN$gene, SMira_Out=DEG_p.SMira.Out.DOWN$gene, SShona_Out=DEG_p.SShona.Out.DOWN$gene),
-  "Out of Infection - Down - any log2FC"
-)
-
-Venn.Inf.DEG_p.UP <- venn_diagram_3way(
-  list(Duke_Inf=DEG_p.Duke.Inf.UP$gene, SMira_Inf=DEG_p.SMira.Inf.UP$gene, SShona_Inf=DEG_p.SShona.Inf.UP$gene),
-  "Infection - Up - any log2FC"
-)
-
-Venn.Inf.DEG_p.DOWN <- venn_diagram_3way(
-  list(Duke_Inf=DEG_p.Duke.Inf.DOWN$gene, SMira_Inf=DEG_p.SMira.Inf.DOWN$gene, SShona_Inf=DEG_p.SShona.Inf.DOWN$gene),
-  "Infection - Down - any log2FC"
-)
-
-grid.arrange(gTree(children = Venn.OutInf.DEG.UP),  gTree(children = Venn.OutInf.DEG.DOWN),
-             gTree(children = Venn.OutInf.DEG_p.UP),  gTree(children = Venn.OutInf.DEG_p.DOWN), 
-             gTree(children = Venn.Inf.DEG.UP), gTree(children = Venn.Inf.DEG.DOWN), 
-             gTree(children = Venn.Inf.DEG_p.UP), gTree(children = Venn.Inf.DEG_p.DOWN),
-             top = "Nro. of Genes with a padj.<0.05 & |log2FC| > 1      -      Nro. of Genes with a padj.<0.05",
-             ncol = 4, nrow = 2, widths =unit(c(80,80,80,80), c("mm","mm","mm","mm")), heights = unit(c(80,80), c("mm","mm")))
 ```
 
 # Merging DEGs with their GO and functional annotations
@@ -511,217 +395,183 @@ Adding annotation names to the result of the comparisons:
 
 ```{r}
 annotated_degs <- lapply(degs, go_and_func_enrichment)
-annotated_res <- lapply(res, function(x) { go_and_func_enrichment(x %>% to_tibble()) })
+annotated_up_down_degs <- lapply(up_down_degs, go_and_func_enrichment)
 ```
 
-# Selecting DEG and DEG_p that are only in the tolerant but not in the susceptible after 48h of infection
+# Comparing different treatments WITHIN varieties
 
-(1) Selecting DEGs in the intersection of TOLs but not in Duke, with annotation(\|log2FC\| \> 1 & padj. \< 0.05)
+## Volcano plots
 
-(1.1) Process tolerant varieties in out of infected areas
-
-```{r}
-# indicesToRemove <- c(1, 3, 5, 6, 7)
-# c(2,4,5,6,9) -> potv4
-only_tol_degs <- only_in_tolerant(degs, up_down_degs, varieties)
-
-indices_to_remove <- c("transcript_id", "baseMean", "lfcSE", "stat", "pvalue")
-merge_suffixes <- c('_SMira', '_SShona')
-
-OnlyTol.Out.DEG.up.genes <- only_in_a_variety_type(DEG.SMira.Out.UP$gene, DEG.SShona.Out.UP$gene, DEG.Duke.Out.UP$gene)
-OnlyTol.Out.DEG.down.genes <- only_in_a_variety_type(DEG.SMira.Out.DOWN$gene, DEG.SShona.Out.DOWN$gene, DEG.Duke.Out.DOWN$gene)
-
-OnlyTol.Out.DEG.up.annotation <- merge_with_annotations(
-  OnlyTol.Out.DEG.up.genes,
-  DEG.SMira.Out.annotation,
-  DEG.SShona.Out.annotation,
-  indices_to_remove,
-  merge_suffixes)
-
-OnlyTol.Out.DEG.down.annotation <- merge_with_annotations(
-  OnlyTol.Out.DEG.down.genes,
-  DEG.SMira.Out.annotation,
-  DEG.SShona.Out.annotation,
-  indices_to_remove,
-  merge_suffixes)
+```{r, echo=FALSE, fig.height=20, fig.width=14}
+volcano_plots_from_comparisons(res,
+                               filename = "results/different-treatments-within-varieties/volcano-plots.pdf",
+                               ncol = 2,
+                               nrow = 3,
+                               widths = unit(c(160,160), c("mm","mm")),
+                               heights = unit(c(150,150,150), c("mm","mm","mm")),
+                               condition = function(name) { !grepl("_vs_", name) })
 ```
 
-(1.2) Process tolerant varieties in infected areas
+## Venn diagrams
 
-```{r}
-OnlyTol.Inf.DEG.up.genes <- only_in_a_variety_type(DEG.SMira.Inf.UP$gene, DEG.SShona.Inf.UP$gene, DEG.Duke.Inf.UP$gene)
-OnlyTol.Inf.DEG.down.genes <- only_in_a_variety_type(DEG.SMira.Inf.DOWN$gene, DEG.SShona.Inf.DOWN$gene, DEG.Duke.Inf.DOWN$gene)
-
-OnlyTol.Inf.DEG.up.annotation <- merge_with_annotations(
-  OnlyTol.Inf.DEG.up.genes,
-  DEG.SMira.Inf.annotation,
-  DEG.SShona.Inf.annotation,
-  indices_to_remove,
-  merge_suffixes)
-
-OnlyTol.Inf.DEG.down.annotation <- merge_with_annotations(
-  OnlyTol.Inf.DEG.down.genes,
-  DEG.SMira.Inf.annotation,
-  DEG.SShona.Inf.annotation,
-  indices_to_remove,
-  merge_suffixes)
+```{r, echo=FALSE, fig.height=13, fig.width=13}
+create_venn_diagrams_grid(
+  up_down_degs,
+  ncol = 2,
+  nrow = 3,
+  widths = unit(c(200,200), c("mm","mm")),
+  heights = unit(c(200,200,200), c("mm","mm","mm")),
+  filename = "results/different-treatments-within-varieties/venn-diagrams.pdf",
+  config = list(
+    list(
+      title="Duke of York ubiquitous up-regulated",
+      x=c("DEG.Duke.Out.UP", "DEG.Duke.Inf.UP"),
+      categories=c("Duke Outside Infected\nUp (vs Mock)", "Duke Inside Infected\nUp (vs Mock)")
+    ),
+    list(
+      title="Duke of York ubiquitous down-regulated",
+      x=c("DEG.Duke.Out.DOWN", "DEG.Duke.Inf.DOWN"),
+      categories=c("Duke Outside Infected\nDown (vs Mock)", "Duke Inside Infected\nDown (vs Mock)")
+    ),
+    list(
+      title="Sarpo Mira ubiquitous up-regulated",
+      x=c("DEG.SMira.Out.UP", "DEG.SMira.Inf.UP"),
+      categories=c("S.Mira Outside Infected\nUp (vs Mock)", "S.Mira Inside Infected\nUp (vs Mock)")
+    ),
+    list(
+      title="Sarpo Mira ubiquitous down-regulated",
+      x=c("DEG.SMira.Out.DOWN", "DEG.SMira.Inf.DOWN"),
+      categories=c("S.Mira Outside Infected\nDown (vs Mock)", "S.Mira Inside Infected\nDown (vs Mock)")
+    ),
+    list(
+      title="Sarpo Shona ubiquitous up-regulated",
+      x=c("DEG.SShona.Out.UP", "DEG.SShona.Inf.UP"),
+      categories=c("S.Shona Outside Infected\nUp (vs Mock)", "S.Shona Inside Infected\nUp (vs Mock)")
+    ),
+    list(
+      title="Sarpo Shona ubiquitous down-regulated",
+      x=c("DEG.SShona.Out.DOWN", "DEG.SShona.Inf.DOWN"),
+      categories=c("S.Shona Outside Infected\nDown (vs Mock)", "S.Shona Inside Infected\nDown (vs Mock)")
+    )
+  )
+)
 ```
 
-(2)Selecting DEG (\|log2FC\| \> 1 & padj. \< 0.05) not adding
-annotation:
+## Data frames
+
+### Treatment response
 
 ```{r}
-#Intersect Sarpo Mira & Sarpo Shona but not Duke
-View(as.data.frame(setdiff(intersect(DEG.SMira.Inf.UP$gene,DEG.SShona.Inf.UP$gene),DEG.Duke.Inf.UP$gene)))
-View(as.data.frame(setdiff(intersect(DEG.SMira.Inf.DOWN$gene,DEG.SShona.Inf.DOWN$gene),DEG.Duke.Inf.DOWN$gene)))
-
-#DEG only Sarpo Mira
-View(as.data.frame(setdiff(setdiff(DEG.SMira.Inf.UP$gene,DEG.SShona.Inf.UP$gene),DEG.Duke.Inf.UP$gene)))
-View(as.data.frame(setdiff(setdiff(DEG.SMira.Inf.DOWN$gene,DEG.SShona.Inf.DOWN$gene),DEG.Duke.Inf.DOWN$gene)))
-
-#DEG only Sarpo Shona
-View(as.data.frame(setdiff(setdiff(DEG.SShona.Inf.UP$gene,DEG.SMira.Inf.UP$gene),DEG.Duke.Inf.UP$gene)))
-View(as.data.frame(setdiff(setdiff(DEG.SShona.Inf.DOWN$gene,DEG.SMira.Inf.DOWN$gene),DEG.Duke.Inf.DOWN$gene)))
-```
-
-(3)Selecting DEG_p (& padj. \< 0.05)
-
-```{r}
-OnlyTol.Out.DEG_p.up.genes <- only_in_a_variety_type(DEG_p.SMira.Out.UP$gene, DEG_p.SShona.Out.UP$gene, DEG_p.Duke.Out.UP$gene)
-OnlyTol.Out.DEG_p.down.genes <- only_in_a_variety_type(DEG_p.SMira.Out.DOWN$gene, DEG_p.SShona.Out.DOWN$gene, DEG_p.Duke.Out.DOWN$gene)
-
-OnlyTol.Out.DEG_p.up.annotation <- merge_with_annotations(
-  OnlyTol.Out.DEG_p.up.genes,
-  DEG_p.SMira.Out.annotation,
-  DEG_p.SShona.Out.annotation,
-  indices_to_remove,
-  suffixes=c("_SMira", "_SShona"))
-
-OnlyTol.Out.DEG_p.down.annotation <- merge_with_annotations(
-  OnlyTol.Out.DEG_p.down.genes,
-  DEG_p.SMira.Out.annotation,
-  DEG_p.SShona.Out.annotation,
-  indices_to_remove,
-  suffixes=c("_SMira", "_SShona"))
-
-#Gene list in "area of infection region" in both varieties
-OnlyTol.Inf.DEG_p.up.genes <- only_in_a_variety_type(DEG_p.SMira.Inf.UP$gene, DEG_p.SShona.Inf.UP$gene, DEG_p.Duke.Inf.UP$gene)
-OnlyTol.Inf.DEG_p.down.genes <- only_in_a_variety_type(DEG_p.SMira.Inf.DOWN$gene, DEG_p.SShona.Inf.DOWN$gene, DEG_p.Duke.Inf.DOWN$gene)
-
-OnlyTol.Inf.DEG_p.up.annotation <- merge_with_annotations(
-  OnlyTol.Inf.DEG_p.up.genes,
-  DEG_p.SMira.Inf.annotation,
-  DEG_p.SShona.Inf.annotation,
-  indices_to_remove,
-  suffixes=c("_SMira", "_SShona"))
-
-OnlyTol.Inf.DEG_p.down.annotation <- merge_with_annotations(
-  OnlyTol.Inf.DEG_p.down.genes,
-  DEG_p.SMira.Inf.annotation,
-  DEG_p.SShona.Inf.annotation,
-  indices_to_remove,
-  suffixes=c("_SMira", "_SShona"))
-```
-
-# Selecting DEG in the intersection Inf48 & Out48, in each variety:
-
-```{r}
-SMira.Inf_Out.DEG.up.genes <- in_intersection(DEG.SMira.Inf.UP$gene, DEG.SMira.Out.UP$gene)
-
-SShona.Inf_Out.DEG.up.genes <- in_intersection(DEG.SShona.Inf.UP$gene, DEG.SShona.Out.UP$gene)
-
-Duke.Inf_Out.DEG.up.genes <- in_intersection(DEG.Duke.Inf.UP$gene, DEG.Duke.Out.UP$gene)
-
-SMira.Inf_Out.DEG.DOWN.genes <- in_intersection(DEG.SMira.Inf.DOWN$gene, DEG.SMira.Out.DOWN$gene)
-
-SShona.Inf_Out.DEG.DOWN.genes <- in_intersection(DEG.SShona.Inf.DOWN$gene, DEG.SShona.Out.DOWN$gene)
-
-Duke.Inf_Out.DEG.DOWN.genes <- in_intersection(DEG.Duke.Inf.DOWN$gene, DEG.Duke.Out.DOWN$gene)
-
-# Adding annotations
-SMira.Inf_Out.DEG.up.exp <- merge_with_annotations(
-  SMira.Inf_Out.DEG.up.genes,
-  DEG.SMira.Inf.annotation,
-  DEG.SMira.Out.annotation,
-  indices_to_remove,
-  suffixes=c('_SMira_Inf', '_SMira_Out'))
-
-SShona.Inf_Out.DEG.up.exp <- merge_with_annotations(
-  SShona.Inf_Out.DEG.up.genes,
-  DEG.SShona.Inf.annotation,
-  DEG.SShona.Out.annotation,
-  indices_to_remove,
-  suffixes=c('_SShona_Inf', '_SShona_Out'))
-
-Duke.Inf_Out.DEG.up.exp <- merge_with_annotations(
-  Duke.Inf_Out.DEG.up.genes,
-  DEG.Duke.Inf.annotation,
-  DEG.Duke.Out.annotation,
-  indices_to_remove,
-  suffixes=c('_Duke_Inf', '_Duke_Out'))
-
-SMira.Inf_Out.DEG.DOWN.exp <- merge_with_annotations(
-  SMira.Inf_Out.DEG.DOWN.genes,
-  DEG.SMira.Inf.annotation,
-  DEG.SMira.Out.annotation,
-  indices_to_remove,
-  suffixes=c('_SMira_Inf', '_SMira_Out'))
-
-SShona.Inf_Out.DEG.DOWN.exp <- merge_with_annotations(
-  SShona.Inf_Out.DEG.DOWN.genes,
-  DEG.SShona.Inf.annotation,
-  DEG.SShona.Out.annotation,
-  indices_to_remove,
-  suffixes=c('_SShona_Inf', '_SShona_Out'))
-
-Duke.Inf_Out.DEG.DOWN.exp <- merge_with_annotations(
-  Duke.Inf_Out.DEG.DOWN.genes,
-  DEG.Duke.Inf.annotation,
-  DEG.Duke.Out.annotation,
-  indices_to_remove,
-  suffixes=c('_Duke_Inf', '_Duke_Out'))
-```
-
-## DEG from the comparison of each TOL vs Duke, in infected or outinfected area:
-
-```{r}
-# 1 -> gene
-# 10 -> Gene_Name
-# 8 -> Athaliana_geneId
-
-# 1 -> gene
-# 3 -> log2FoldChange
-# 7 -> padj
-
-indices_to_remove_from_tb <- c(1, 3, 7)
-
-if (use_v4) {
-  indices_to_remove_from_annotation <- c(1, 10, 8)
-} else {
-  indices_to_remove_from_annotation <- c(2, 11, 10)
+for (name in names(up_down_degs)) {
+  if (!grepl("_vs_", name) && !grepl("DEG_p", name)) {
+    write.csv(up_down_degs[[name]], file = paste("results", "different-treatments-within-varieties", paste(name, "csv", sep = "."), sep = "/"))
+    
+    genes <- as.data.frame(up_down_degs[[name]]$gene)
+    names(genes) <- c("gene")
+    annotations <- go_and_func_enrichment(genes)
+    write.csv(annotations, file = paste("results", "different-treatments-within-varieties", paste(paste(name, "annotations", sep = "_"), 'csv', sep = "."), sep = "/"))
+  }
 }
-
-TOL_vs_Duke.genes <- unique(union(union(DEG.SMira_vs_Duke.Inf$gene, DEG.SMira_vs_Duke.Out$gene),
-                                  union(DEG.SShona_vs_Duke.Inf$gene,DEG.SShona_vs_Duke.Out$gene)))
-
-TOL_vs_Duke.annotation <- unique(rbind(rbind(rbind(
-                             subset(unique(res.SMira_vs_Duke.Inf.annotation[,indices_to_remove_from_annotation]), gene %in% TOL_vs_Duke.genes),
-                             subset(unique(res.SMira_vs_Duke.Out.annotation[,indices_to_remove_from_annotation]), gene %in% TOL_vs_Duke.genes)),
-                             subset(unique(res.SShona_vs_Duke.Inf.annotation[,indices_to_remove_from_annotation]), gene %in% TOL_vs_Duke.genes)),
-                             subset(unique(res.SShona_vs_Duke.Out.annotation[,indices_to_remove_from_annotation]), gene %in% TOL_vs_Duke.genes)))
-
-TOL_vs_Duke.Inf.Out <- merge(merge(merge(merge(TOL_vs_Duke.annotation,
-                             subset(as.data.frame(res.SMira_vs_Duke.Inf.tb[,indices_to_remove_from_tb]), gene %in% TOL_vs_Duke.genes),by = "gene", all.x =T),
-                             subset(as.data.frame(res.SMira_vs_Duke.Out.tb[,indices_to_remove_from_tb]), gene %in% TOL_vs_Duke.genes),by = "gene", all.x =T),
-                             subset(as.data.frame(res.SShona_vs_Duke.Inf.tb[,indices_to_remove_from_tb]), gene %in% TOL_vs_Duke.genes),by = "gene", all.x =T),
-                             subset(as.data.frame(res.SShona_vs_Duke.Out.tb[,indices_to_remove_from_tb]), gene %in% TOL_vs_Duke.genes),by = "gene", all.x =T)
-
-colnames(TOL_vs_Duke.Inf.Out) <- c("gene","name", ifelse(use_v4, "Athaliana_geneID", "TAIR"),
-                                   "SMira.Inf.LFC","SMira.Inf.padj","SMira.Out.LFC","SMira.Out.padj",
-                                   "SShona.Inf.LFC","SShona.Inf.padj","SShona.Out.LFC","SShona.Out.padj")
 ```
 
-## Plotting the normalized gene counts across the different time points.
+### Ubiquitous response to infection
+
+```{r}
+for (variety in names(varieties)) {
+  for (regulation_direction in regulation_directions) {
+    out_name = paste("DEG", variety, "Out", regulation_direction, sep = ".")
+    inf_name = paste("DEG", variety, "Inf", regulation_direction, sep = ".")
+    name = paste(out_name, inf_name, sep = "_")
+    
+    df = merge(up_down_degs[[out_name]], up_down_degs[[inf_name]], by = "gene", suffixes = c("_Out", "_Inf"))
+    write.csv(df, file = paste("results", "different-treatments-within-varieties", paste(name, "csv", sep = "."), sep = "/"))
+    
+    genes <- as.data.frame(df$gene)
+    names(genes) <- c("gene")
+    annotations <- go_and_func_enrichment(genes)
+    write.csv(annotations, file = paste("results", "different-treatments-within-varieties", paste(paste(name, "annotations", sep = "_"), 'csv', sep = "."), sep = "/"))
+  }
+}
+```
+
+# Comparing the same treatment BETWEEN varieties
+
+## Volcano plots
+
+```{r, echo=FALSE, fig.height=20, fig.width=14}
+volcano_plots_from_comparisons(res,
+                               filename = "results/same-treatment-between-varieties/volcano-plots.pdf",
+                               ncol = 2,
+                               nrow = 3,
+                               widths = unit(c(160,160), c("mm","mm")),
+                               heights = unit(c(150,150,150), c("mm","mm","mm")),
+                               condition = function(name) { grepl("_vs_", name) })
+```
+
+## Venn diagrams
+
+Sarpo shared baseline differential expression:
+
+```{r, echo=FALSE, fig.height=13, fig.width=13}
+create_venn_diagrams_grid(
+  up_down_degs,
+  ncol = 1,
+  nrow = 2,
+  widths = unit(c(200), c("mm")),
+  heights = unit(c(200,200), c("mm","mm")),
+  filename = "results/same-treatment-between-varieties/venn-diagrams.pdf",
+  config = list(
+    list(
+      title="Genes upregulated in Sarpo controls (compared with Duke controls)",
+      x=c("DEG.SMira_vs_Duke.Control.UP", "DEG.SShona_vs_Duke.Control.UP"),
+      categories=c("Mira Control vs\nDuke Control Up", "Shona Control vs\nDuke Control Up")
+    ),
+    list(
+      title="Genes downregulated in Sarpo controls (compared with Duke controls)",
+      x=c("DEG.SMira_vs_Duke.Control.DOWN", "DEG.SShona_vs_Duke.Control.DOWN"),
+      categories=c("Mira Control vs\nDuke Control Down", "Shona Control vs\nDuke Control Down")
+    )
+  )
+)
+```
+
+## Data frames
+
+### Variety-specific treatment response
+
+```{r}
+for (name in names(up_down_degs)) {
+  if (grepl("_vs_", name) && !grepl("DEG_p", name)) {
+    write.csv(up_down_degs[[name]], file = paste("results", "same-treatment-between-varieties", paste(name, "csv", sep = "."), sep = "/"))
+    
+    genes <- as.data.frame(up_down_degs[[name]]$gene)
+    names(genes) <- c("gene")
+    annotations <- go_and_func_enrichment(genes)
+    write.csv(annotations, file = paste("results", "same-treatment-between-varieties", paste(paste(name, "annotations", sep = "_"), 'csv', sep = "."), sep = "/"))
+  }
+}
+```
+
+### Constitutive UP
+
+```{r}
+shona_constitutive_up <- merge(up_down_degs$DEG.SShona_vs_Duke.Control.UP, up_down_degs$DEG.SShona_vs_Duke.Inf.UP, by = "gene", suffixes = c("_Control", "_Inf"))
+shona_constitutive_up_annotated_genes <- go_and_func_enrichment(
+  in_intersection(up_down_degs$DEG.SShona_vs_Duke.Control.UP$gene, up_down_degs$DEG.SShona_vs_Duke.Inf.UP$gene)
+)
+
+mira_constitutive_up <- merge(up_down_degs$DEG.SMira_vs_Duke.Control.UP, up_down_degs$DEG.SMira_vs_Duke.Inf.UP, by = "gene", suffixes = c("_Control", "_Inf"))
+mira_constitutive_up_annotated_genes <- go_and_func_enrichment(
+  in_intersection(up_down_degs$DEG.SMira_vs_Duke.Control.UP$gene, up_down_degs$DEG.SMira_vs_Duke.Inf.UP$gene)
+)
+
+write.csv(shona_constitutive_up, file = "results/same-treatment-between-varieties/constitutive-shona-upregulation.csv")
+write.csv(shona_constitutive_up_annotated_genes, file = "results/same-treatment-between-varieties/constitutive-shona-upregulation-annotations.csv")
+write.csv(mira_constitutive_up, file = "results/same-treatment-between-varieties/constitutive-mira-upregulation.csv")
+write.csv(mira_constitutive_up_annotated_genes, file = "results/same-treatment-between-varieties/constitutive-mira-upregulation-annotations.csv")
+```
+
+# Plotting the normalized gene counts across the different time points.
 
 It is a graph for an individual gene.
 
@@ -729,122 +579,69 @@ It is a graph for an individual gene.
 plotCounts(dds_Blight, gene= "Soltu.DM.01G027350", intgroup=c("variety","treatment"))
 ```
 
-## Selection of the top 20:
+# Selection of top 20 genes
 
-NOTE: temporarily disabled - need to rework the indices for v6 use!
+NOTE: this section can be automated.
 
-Sarpo Mira (Inf/Out vs Mock):
-
-```{r, echo=FALSE, fig.height=5, fig.width=20}
-# DEG.SMira.Inf.annotation.up <- unique(subset(DEG.SMira.Inf.annotation,log2FoldChange > 1)[,c(1,3,7,8,10)])
-# DEG.SMira.Out.annotation.up <- unique(subset(DEG.SMira.Out.annotation,log2FoldChange > 1)[,c(1,3,7,8,10)])
-# 
-# DEG.SMira.Inf.annotation.down <- unique(subset(DEG.SMira.Inf.annotation,log2FoldChange < -1)[,c(1,3,7,8,10)])
-# DEG.SMira.Out.annotation.down <- unique(subset(DEG.SMira.Out.annotation,log2FoldChange < -1)[,c(1,3,7,8,10)])
-```
-
-Duke (Inf/Out vs Mock):
-
-```{r, echo=FALSE, fig.height=5, fig.width=20}
-# DEG.Duke.Inf.annotation.up <- unique(subset(DEG.Duke.Inf.annotation,log2FoldChange > 1)[,c(1,3,7,8,10)])
-# DEG.Duke.Out.annotation.up <- unique(subset(DEG.Duke.Out.annotation,log2FoldChange > 1)[,c(1,3,7,8,10)])
-# 
-# DEG.Duke.Inf.annotation.down <- unique(subset(DEG.Duke.Inf.annotation,log2FoldChange < -1)[,c(1,3,7,8,10)])
-# DEG.Duke.Out.annotation.down <- unique(subset(DEG.Duke.Out.annotation,log2FoldChange < -1)[,c(1,3,7,8,10)])
-```
-
-Sarpo Mira vs Duke, Inf48
+## Hold-out Duke
 
 ```{r}
-# DEG.SMira_vs_Duke.Inf.annotation.up <- unique(subset(DEG.SMira_Duke.Inf.annotation, log2FoldChange > 1)[,c(1,3,7,8,10)])
-# DEG.SMira_vs_Duke.Inf.annotation.down <- unique(subset(DEG.SMira_Duke.Inf.annotation, log2FoldChange < -1)[,c(1,3,7,8,10)])
+hold_out <- up_down_degs$DEG.Duke.Inf.UP
+hold_out <- hold_out[order(hold_out$padj), ]
+hold_out <- hold_out[1:20, ]
+
+hold_out_with_variety1 <- merge(hold_out, up_down_degs$DEG.SMira.Inf.UP, by = "gene", all.x = T, suffixes = c("_Duke", "_SMira"))
+hold_out_with_variety2 <- merge(hold_out, up_down_degs$DEG.SShona.Inf.UP, by = "gene", all.x = T, suffixes = c("_Duke", "_SShona"))
+top20 <- merge(hold_out_with_variety1, hold_out_with_variety2)
+top20 <- top20[order(top20$padj_Duke), ]
+rownames(top20) <- NULL
+
+top20_annotations <- go_and_func_enrichment(as.data.frame(table(top20$gene, dnn = c("gene"))))
+
+write.csv(top20, "results/duke_inf_top20.csv")
+write.csv(top20_annotations, "results/duke_inf_top20_annotations.csv")
 ```
 
-Sarpo Mira vs Duke, OutInf48h
+## Hold-out S.Mira
 
 ```{r}
-# DEG.SMira_vs_Duke.Out.annotation.up <- unique(subset(DEG.SMira_Duke.Out.annotation, log2FoldChange > 1)[,c(1,3,7,8,10)])
-# DEG.SMira_vs_Duke.Out.annotation.down <- unique(subset(DEG.SMira_Duke.Out.annotation, log2FoldChange < -1)[,c(1,3,7,8,10)])
+hold_out <- up_down_degs$DEG.SMira.Inf.UP
+hold_out <- hold_out[order(hold_out$padj), ]
+hold_out <- hold_out[1:20, ]
+
+hold_out_with_variety1 <- merge(hold_out, up_down_degs$DEG.Duke.Inf.UP, by = "gene", all.x = T, suffixes = c("_SMira", "_Duke"))
+hold_out_with_variety2 <- merge(hold_out, up_down_degs$DEG.SShona.Inf.UP, by = "gene", all.x = T, suffixes = c("_SMira", "_SShona"))
+top20 <- merge(hold_out_with_variety1, hold_out_with_variety2)
+top20 <- top20[order(top20$padj_SMira), ]
+rownames(top20) <- NULL
+
+top20_annotations <- go_and_func_enrichment(as.data.frame(table(top20$gene, dnn = c("gene"))))
+
+write.csv(top20, "results/smira_inf_top20.csv")
+write.csv(top20_annotations, "results/smira_inf_top20_annotations.csv")
 ```
 
-Sarpo Shona vs Duke, Inf48h
+## Hold-out S.Shona
 
 ```{r}
-# DEG.SShona_vs_Duke.Inf.annotation.up <- unique(subset(DEG.SShona_Duke.Inf.annotation, log2FoldChange > 1)[,c(1,3,7,8,10)])
-# DEG.SShona_vs_Duke.Inf.annotation.down <- unique(subset(DEG.SShona_Duke.Inf.annotation, log2FoldChange < -1)[,c(1,3,7,8,10)])
+hold_out <- up_down_degs$DEG.SShona.Inf.UP
+hold_out <- hold_out[order(hold_out$padj), ]
+hold_out <- hold_out[1:20, ]
+
+hold_out_with_variety1 <- merge(hold_out, up_down_degs$DEG.Duke.Inf.UP, by = "gene", all.x = T, suffixes = c("_SShona", "_Duke"))
+hold_out_with_variety2 <- merge(hold_out, up_down_degs$DEG.SMira.Inf.UP, by = "gene", all.x = T, suffixes = c("_SShona", "_SMira"))
+top20 <- merge(hold_out_with_variety1, hold_out_with_variety2)
+top20 <- top20[order(top20$padj_SShona), ]
+rownames(top20) <- NULL
+
+top20_annotations <- go_and_func_enrichment(as.data.frame(table(top20$gene, dnn = c("gene"))))
+
+write.csv(top20, "results/sshona_inf_top20.csv")
+write.csv(top20_annotations, "results/sshona_inf_top20_annotations.csv")
 ```
 
-Sarpo Mira vs Duke, OutInf48h
+# Save all data
 
 ```{r}
-# DEG.SShona_vs_Duke.Out.annotation.up <- unique(subset(DEG.SShona_Duke.Out.annotation, log2FoldChange > 1)[,c(1,3,7,8,10)])
-# DEG.SShona_vs_Duke.Out.annotation.down <- unique(subset(DEG.SShona_Duke.Out.annotation, log2FoldChange < -1)[,c(1,3,7,8,10)])
-```
-
-## Saving data
-
-```{r}
-#For gProfiler2, without annotation:
-
-#save(DEG.Duke.Inf.UP, DEG.Duke.Inf.DOWN, DEG.Duke.Out.UP, DEG.Duke.Out.DOWN,
-#     DEG.SMira.Inf.UP, DEG.SMira.Inf.DOWN, DEG.SMira.Out.UP, DEG.SMira.Out.DOWN,
-#     DEG.SShona.Inf.UP, DEG.SShona.Inf.DOWN, DEG.SShona.Out.UP, DEG.SShona.Out.DOWN, file = "2.DESeq2_output_48h/DEG_48h_vs_Mock_UpDown.RData")
-
-
-#save(DEG_p.Duke.Inf.UP, DEG_p.Duke.Inf.DOWN, DEG_p.Duke.Out.UP, DEG_p.Duke.Out.DOWN,
-#     DEG_p.SMira.Inf.UP, DEG_p.SMira.Inf.DOWN, DEG_p.SMira.Out.UP, DEG_p.SMira.Out.DOWN,
-#     DEG_p.SShona.Inf.UP, DEG_p.SShona.Inf.DOWN, DEG_p.SShona.Out.UP, DEG_p.SShona.Out.DOWN, file = "2.DESeq2_output_48h/DEG_p_48h_vs_Mock_UpDown.RData")
-
-
-
-
-
-#DEG with their annotation(gene_name, A.thaliana_ID, GOterm) to later select DEGs in base of their linked GO terms:
-#save(DEG.Duke.Inf.annotation,DEG.Duke.Out.annotation,
-#     DEG.SMira.Inf.annotation,DEG.SMira.Out.annotation,
-#     DEG.SShona.Inf.annotation,DEG.SShona.Out.annotation, file ="2.DESeq2_output_48h/DEG_48h_vs_Mock.Annotation_.RData")
-
-#DEG with without GOterms to observe only the gene_name and the A.thaliana_ID. 
-#It generate a smaller tables than the previous one to observe better which genes are DEGs:
-#write.csv(unique(DEG.Duke.Inf.annotation[,c(1,3,7,8,10)]), file = "2.DESeq2_output_48h/DEG_1Duke_Inf48h_vs_Mock_GeneFuntion_notGO.csv")
-#write.csv(unique(DEG.Duke.Out.annotation[,c(1,3,7,8,10)]), file = "2.DESeq2_output_48h/DEG_1Duke_Out48h_vs_Mock_GeneFuntion_notGO.csv")
-
-#write.csv(unique(DEG.SMira.Inf.annotation[,c(1,3,7,8,10)]), file = "2.DESeq2_output_48h/DEG_1SMira_Inf48h_vs_Mock_GeneFuntion_notGO.csv")
-#write.csv(unique(DEG.SMira.Out.annotation[,c(1,3,7,8,10)]), file = "2.DESeq2_output_48h/DEG_1SMira_Out48h_vs_Mock_GeneFuntion_notGO.csv")
-
-#write.csv(unique(DEG.SShona.Inf.annotation[,c(1,3,7,8,10)]), file = "2.DESeq2_output_48h/DEG_1SShona_Inf48h_vs_Mock_GeneFuntion_notGO.csv")
-#write.csv(unique(DEG.SShona.Out.annotation[,c(1,3,7,8,10)]), file = "2.DESeq2_output_48h/DEG_1SShona_Out48h_vs_Mock_GeneFuntion_notGO.csv")
-
-
-#To complete the expression of the genes in the tables that will be generated:
-#save(res.Duke.Inf, res.Duke.Out, 
-#     res.SMira.Inf, res.SMira.Out, 
-#     res.SShona.Inf, res.SShona.Out, file = "2.DESeq2_output_48h/res.48h_vs_Mock.RData")
-
-#save(res.Duke.Inf.annotation, res.Duke.Out.annotation, 
-#     res.SMira.Inf.annotation, res.SMira.Out.annotation, 
-#     res.SShona.Inf.annotation, res.SShona.Out.annotation, file = "2.DESeq2_output_48h/res.48h_vs_Mock.annotation.RData")
-
-
-#Saving the DEGs from the comparison between each TOL vs Duke in infected or outinfected area:
-#write.csv(TOL_vs_Duke.Inf.Out, file = "EachDEG.TOL_vs_Duke_Inf_Out.csv")
-
-
-#DEG_p:
-#save(DEG_p.Duke.Inf.annotation,DEG_p.Duke.Out.annotation,
-#     DEG_p.SMira.Inf.annotation,DEG_p.SMira.Out.annotation,
-#     DEG_p.SShona.Inf.annotation,DEG_p.SShona.Out.annotation, file ="2.DESeq2_output_48h/DEG_p_Annotation_48h_vs_Mock.RData")
-
-#write.csv(unique(DEG_p.Duke.Inf.annotation[,c(1,3,7,8,10)]), file = "2.DESeq2_output_48h/DEG_p_Duke_Inf48h_vs_Mock_GeneFuntion_notGO.csv")
-#write.csv(unique(DEG_p.Duke.Out.annotation[,c(1,3,7,8,10)]), file = "2.DESeq2_output_48h/DEG_p_Duke_Out48h_vs_Mock_GeneFuntion_notGO.csv")
-
-#write.csv(unique(DEG_p.SMira.Inf.annotation[,c(1,3,7,8,10)]), file = "2.DESeq2_output_48h/DEG_p_SMira_Inf48h_vs_Mock_GeneFuntion_notGO.csv")
-#write.csv(unique(DEG_p.SMira.Out.annotation[,c(1,3,7,8,10)]), file = "2.DESeq2_output_48h/DEG_p_SMira_Out48h_vs_Mock_GeneFuntion_notGO.csv")
-
-#write.csv(unique(DEG_p.SShona.Inf.annotation[,c(1,3,7,8,10)]), file = "2.DESeq2_output_48h/DEG_p_SShona_Inf48h_vs_Mock_GeneFuntion_notGO.csv")
-#write.csv(unique(DEG_p.SShona.Out.annotation[,c(1,3,7,8,10)]), file = "2.DESeq2_output_48h/DEG_p_SShona_Out48h_vs_Mock_GeneFuntion_notGO.csv")
-
-#Saving normalized counts: (from "Norm.Counts <- counts(dds_Blight, normalized=TRUE)")
-#write.csv(Norm.Counts, file= "NormalizedCounts.csv")
-
+save(res, degs, annotated_degs, up_down_degs, annotated_up_down_degs, file = "results/deseq2_analysis.RData")
 ```
