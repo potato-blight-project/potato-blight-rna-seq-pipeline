@@ -27,12 +27,20 @@ volcano_plots_from_comparisons <- function(res, ncol, nrow, widths, heights, fil
   ggsave(filename, g)
 }
 
-venn_diagram_2way <- function(x, title, categories, filename = NULL) {
+get_venn_diagram <- function(x, title, categories, filename = NULL) {
+  if (length(categories) == 2) {
+    fill <- c("#EFC000FF","#CD534CFF")
+    cat.dist <- c(0.055, 0.055)
+  } else {
+    fill <- c("#E69F00","#56B4E9", "#009E73")
+    cat.dist <- c(0.055, 0.055, 0.055)
+  }
+  
   venn.diagram(filename = filename,
                x = x, 
                scaled = FALSE,
                col = "black",
-               fill = c("#EFC000FF","#CD534CFF"), 
+               fill = fill, 
                euler.d = FALSE,
                main = title,
                category.names = categories,
@@ -44,16 +52,28 @@ venn_diagram_2way <- function(x, title, categories, filename = NULL) {
                cat.cex = 1.5,
                cat.default.pos = "outer",
                # cat.pos = c(120, 120),
-               cat.dist = c(0.055, 0.055))
+               cat.dist = cat.dist)
 }
-
-# venn_diagram_3way <- function(x, title, categories) {
-#   venn.diagram(filename = NULL, x, 
-#                scaled = FALSE, col = "black", fill = c("#E69F00","#56B4E9", "#009E73"),
+# 
+# venn_diagram_3way <- function(x, title, categories, filename = NULL) {
+#   venn.diagram(filename = filename,
+#                x = x,
+#                scaled = FALSE,
+#                col = "black",
+#                fill = c("#E69F00","#56B4E9", "#009E73"),
 #                main = title,
-#                euler.d = FALSE,lty = 1 , cex = 0.9, lwd = 1, cat.cex = 1, sigdigs = 1,
+#                euler.d = FALSE,
+#                lty = 1 ,
+#                cex = 0.9,
+#                lwd = 1,
+#                cat.cex = 1,
+#                sigdigs = 1,
 #                category.names = categories,
-#                print.mode=c("raw","percent"), height = 20, width = 20, cat.pos = c(-20,20,-180), cat.dist = c(0.06, 0.06, 0.04))
+#                print.mode=c("raw","percent"),
+#                height = 20,
+#                width = 20,
+#                cat.pos = c(-20,20,-180),
+#                cat.dist = c(0.06, 0.06, 0.04))
 # }
 
 create_venn_diagrams_grid <- function(up_down_degs, ncol, nrow, widths, heights, filename, config) {
@@ -71,13 +91,7 @@ create_venn_diagrams_grid <- function(up_down_degs, ncol, nrow, widths, heights,
       paste(a[[1]][2], a[[1]][3], sep = "_")
     })
     
-    if (length(deg_names) == 3) {
-      venn_diagram <- venn_diagram_3way(genes, title, categories)
-    } else {
-      venn_diagram <- venn_diagram_2way(genes, title, categories)
-    }
-    
-    venn_diagrams[[i]] <- venn_diagram
+    venn_diagrams[[i]] <- get_venn_diagram(genes, title, categories)
     
     i <- i + 1
   }

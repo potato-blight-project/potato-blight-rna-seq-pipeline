@@ -59,18 +59,21 @@ if (!require("BiocManager", quietly = TRUE))
 BiocManager::install("apeglm")
 ```
 
-```{r message=FALSE, warning=FALSE}
-#this code works to install an older version of lasso2 from the archives
-packageurl <- "https://cran.r-project.org/src/contrib/Archive/lasso2/lasso2_1.2-22.tar.gz"
-install.packages(packageurl, repos=NULL, type="source")
+```{r}
+BiocManager::install("DESeq2", force = TRUE)
 ```
 
 ```{r message=FALSE, warning=FALSE}
-BiocManager::install("DEGreport")
+#this code works to install an older version of lasso2 from the archives
+install.packages("https://cran.r-project.org/src/contrib/Archive/lasso2/lasso2_1.2-22.tar.gz", repos=NULL, type="source")
+```
+
+```{r message=FALSE, warning=FALSE}
+BiocManager::install("DEGreport", force = TRUE)
 ```
 
 ```{r}
-BiocManager::install("EnhancedVolcano")
+BiocManager::install("EnhancedVolcano", force = TRUE)
 ```
 
 ```{r}
@@ -510,7 +513,43 @@ volcano_plots_from_comparisons(res,
 
 ## Venn diagrams
 
-Sarpo shared baseline differential expression:
+### Treatment response (3-way)
+
+```{r, echo=FALSE, fig.height=13, fig.width=13}
+source('./plots.R')
+create_venn_diagrams_grid(
+  up_down_degs,
+  ncol = 2,
+  nrow = 2,
+  widths = unit(c(200, 200), c("mm", "mm")),
+  heights = unit(c(200, 200), c("mm", "mm")),
+  filename = "results/same-treatment-between-varieties/treatment-response-venn-diagrams.pdf",
+  config = list(
+    list(
+      title="Genes up-regulated in out of infected areas",
+      x=c("DEG.Duke.Out.UP", "DEG.SMira.Out.UP", "DEG.SShona.Out.UP"),
+      categories=c("Duke Out Up", "S.Mira Out Up", "S.Shona Out Up")
+    ),
+    list(
+      title="Genes down-regulated in out of infected areas",
+      x=c("DEG.Duke.Out.DOWN", "DEG.SMira.Out.DOWN", "DEG.SShona.Out.DOWN"),
+      categories=c("Duke Out Down", "S.Mira Out Down", "S.Shona Out Down")
+    ),
+    list(
+      title="Genes up-regulated in infected areas",
+      x=c("DEG.Duke.Inf.UP", "DEG.SMira.Inf.UP", "DEG.SShona.Inf.UP"),
+      categories=c("Duke Inf Up", "S.Mira Inf Up", "S.Shona Inf Up")
+    ),
+    list(
+      title="Genes down-regulated in infected areas",
+      x=c("DEG.Duke.Inf.DOWN", "DEG.SMira.Inf.DOWN", "DEG.SShona.Inf.DOWN"),
+      categories=c("Duke Inf Down", "S.Mira Inf Down", "S.Shona Inf Down")
+    )
+  )
+)
+```
+
+### Sarpo shared baseline differential expression
 
 ```{r, echo=FALSE, fig.height=13, fig.width=13}
 create_venn_diagrams_grid(
