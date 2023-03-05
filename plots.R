@@ -54,27 +54,6 @@ get_venn_diagram <- function(x, title, categories, filename = NULL) {
                # cat.pos = c(120, 120),
                cat.dist = cat.dist)
 }
-# 
-# venn_diagram_3way <- function(x, title, categories, filename = NULL) {
-#   venn.diagram(filename = filename,
-#                x = x,
-#                scaled = FALSE,
-#                col = "black",
-#                fill = c("#E69F00","#56B4E9", "#009E73"),
-#                main = title,
-#                euler.d = FALSE,
-#                lty = 1 ,
-#                cex = 0.9,
-#                lwd = 1,
-#                cat.cex = 1,
-#                sigdigs = 1,
-#                category.names = categories,
-#                print.mode=c("raw","percent"),
-#                height = 20,
-#                width = 20,
-#                cat.pos = c(-20,20,-180),
-#                cat.dist = c(0.06, 0.06, 0.04))
-# }
 
 create_venn_diagrams_grid <- function(up_down_degs, ncol, nrow, widths, heights, filename, config) {
   venn_diagrams <- list()
@@ -96,7 +75,7 @@ create_venn_diagrams_grid <- function(up_down_degs, ncol, nrow, widths, heights,
     i <- i + 1
   }
   
-  g <- grid.arrange(grobs = venn_diagrams,
+  g <- grid.arrange(grobs = lapply(venn_diagrams, grobTree),
                ncol = ncol,
                nrow = nrow,
                widths = widths,

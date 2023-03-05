@@ -516,7 +516,6 @@ volcano_plots_from_comparisons(res,
 ### Treatment response (3-way)
 
 ```{r, echo=FALSE, fig.height=13, fig.width=13}
-source('./plots.R')
 create_venn_diagrams_grid(
   up_down_degs,
   ncol = 2,
