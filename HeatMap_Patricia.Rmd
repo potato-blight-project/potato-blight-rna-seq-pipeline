@@ -1,0 +1,135 @@
+---
+title: "Transcriptomic analysis of potato samples under drought stress, Part-I"
+author: "Patricia Ponce"
+date: "June, 2021"
+output: 
+  html_document:
+    self_contained: false
+fontsize: 15pt
+---
+
+Before this analysis the reads were mapped to the potato genome v6 with STAR, then counting with HTSeq. 
+
+PURPOSE: To make HEATMAP to group genes in base on their foldchange.
+
+INPUT: 
+- Genes that are significant (padj. < 0.05) up or downergulated (no threshold for foldchange)
+- DEGs: padj. < 0.05 and |log2FC| > 1
+
+OUTPUT: HEATMAPS
+
+
+
+Path of the folder for the inputs and outputs:
+```{r}
+setwd("Y:/7.DEAnalysis_blight/")
+```
+
+```{r}
+#install.packages("xfun")
+```
+
+
+# Libraries:
+```{r}
+#For the heatmap:
+library(ggplot2)
+library(gplots)
+library(grDevices)
+```
+
+# Data:
+```{r}
+#Selecting data from excel:
+Hmap_data <- read.table("clipboard", header = T, sep = "\t") #Data from excel
+View(Hmap_data)
+```
+
+```{r}
+#Add a label column
+Hmap_data$Label <- paste(Hmap_data$gene,Hmap_data$Gene_Name, sep = ":")
+View(Hmap_data)
+```
+
+```{r}
+#Hmap_data.M <- as.matrix(Hmap_data[,c(3,5,7,9,11,13,15,17,19,
+ #                                     21,23,25,27,29,31,33,35)]) #cell wall and receptors
+
+Hmap_data.M <- as.matrix(Hmap_data[,c(4,6,8,10,12,14,16,18,20,
+                        22,24,26,28,30,32,34,36)]) #cell wall and receptors
+
+col <- colorRampPalette(c("blue","white","red")) 
+View(Hmap_data.M)
+```
+
+##Run the code here for the heatmap: 
+```{r}
+#dev.cur()
+#dev.off()
+par(cex.main=0.5)
+
+p <- heatmap.2(Hmap_data.M,
+          scale = "none", 
+          dendrogram = "none", 
+          Colv = NA, 
+          Rowv = NA, 
+          col = col,
+          trace = "none", 
+          density.info = "none",
+          labRow = Hmap_data$Gene_Name,  #Row label #FALSE 
+          labCol = c("SM","SS","D","SM","SS","D","SM","SS","D", 
+                      "C", "M", "Inf", "Out", "C", "M", "Inf", "Out"),
+          cexCol = 0.8,
+          offsetCol = -0.2,
+          cexRow =0.52,
+          colsep = c(3,6,9,13),
+          rowsep = c(44,54,76,101,107,123), # cellwall:c(44,54,76,101,107,123)
+                                             #Receptors: c(33, 49, 77,110,112,128,129)
+          symkey = FALSE,
+          lwid = c(0.05,0.15),     #controls column width
+          lhei = c(0.5,3.5),      #controls row height
+          na.color = "darkgrey", 
+          margins = c(2,20)) #c(2, 20)  #vector of length 2 with margins for col names and row names
+
+p + title(main= list("Receptors DEGs - Inf48-vs-Mock48", cex = 1.5), line = 1)
+#dev.off()
+```
+
+Venn diagram
+```{r}
+library(VennDiagram)
+library(gridExtra)
+
+SMira <- read.table("clipboard", header = T)
+SShona <- read.table("clipboard", header = T)
+Duke <- read.table("clipboard", header = T)
+
+
+DEG.CW.venn <-   venn.diagram(filename = NULL, 
+                  list(Duke   = Duke$gene, 
+                  S.Mira = SMira$gene,
+                  S.Shona = SShona$gene), 
+                  scaled = FALSE, col = "black", fill = c("#E69F00","#56B4E9", "#009E73"),
+                  euler.d = FALSE,lty = 1 , 
+                  cex = 0.8, lwd = 1, cat.cex = 1, 
+                  sigdigs = 1,
+                  print.mode=c("raw","percent"), 
+                  height = 20, width = 20, cat.pos = c(-20,20,-180), cat.dist = c(0.06, 0.06, 0.04))
+
+grid.arrange(gTree(children = DEG.CW.venn),  
+             top = "DEGs related to the cell wall found in the infected area (Inf. vs Mock)", 
+             ncol = 1, nrow = 1, 
+             widths =unit(c(80), c("mm")), 
+             heights = unit(c(80), c("mm")))
+```
+
+venn.diagram(filename = NULL, 
+                  list(Duke   = Duke$gene, 
+                  S.Mira = SMira$gene,
+                  S.Shona = SShona$gene), 
+                  scaled = FALSE, col = "black", fill = c("#E69F00","#56B4E9", "#009E73"),
+                  euler.d = FALSE,lty = 1 , 
+                  cex = 0.8, lwd = 1, cat.cex = 1, 
+                  sigdigs = 1,
+                  print.mode=c("raw","percent"), 
+                  height = 20, width = 20, cat.pos = c(-20,20,-180), cat.dist = c(0.06, 0.06, 0.04), output=FALSE)

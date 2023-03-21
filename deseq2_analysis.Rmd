@@ -603,10 +603,17 @@ mira_constitutive_up_annotated_genes <- go_and_func_enrichment(
   in_intersection(up_down_degs$DEG.SMira_vs_Duke.Control.UP$gene, up_down_degs$DEG.SMira_vs_Duke.Inf.UP$gene)
 )
 
+tolerant_constitutive_up <- merge(shona_constitutive_up, mira_constitutive_up, by = "gene", suffixes = c ("_Shona_vs_Duke", "_Mira_vs_Duke"))
+tolerant_constitutive_up_genes <- c(tolerant_constitutive_up$gene)
+tolerant_constitutive_up_annotated_genes <- mira_constitutive_up_annotated_genes[mira_constitutive_up_annotated_genes$gene %in% tolerant_constitutive_up_genes,]
+
 write.csv(shona_constitutive_up, file = "results/same-treatment-between-varieties/constitutive-shona-upregulation.csv")
 write.csv(shona_constitutive_up_annotated_genes, file = "results/same-treatment-between-varieties/constitutive-shona-upregulation-annotations.csv")
 write.csv(mira_constitutive_up, file = "results/same-treatment-between-varieties/constitutive-mira-upregulation.csv")
 write.csv(mira_constitutive_up_annotated_genes, file = "results/same-treatment-between-varieties/constitutive-mira-upregulation-annotations.csv")
+write.csv(tolerant_constitutive_up, file = 
+"results/same-treatment-between-varieties/tolerant-constitutive-upregulation.csv")
+write.csv(tolerant_constitutive_up_annotated_genes, file = "results/same-treatment-between-varieties/tolerant-constitutive-upregulation-annotations.csv")
 ```
 
 # Plotting the normalized gene counts across the different time points.
