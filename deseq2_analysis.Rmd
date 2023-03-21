@@ -473,6 +473,9 @@ for (name in names(up_down_degs)) {
     names(genes) <- c("gene")
     annotations <- go_and_func_enrichment(genes)
     write.csv(annotations, file = paste("results", "different-treatments-within-varieties", paste(paste(name, "annotations", sep = "_"), 'csv', sep = "."), sep = "/"))
+    
+    genes_and_names <- unique(annotations %>% dplyr::select(gene, name))
+    write.csv(genes_and_names, file = paste("results", "different-treatments-within-varieties", paste(paste(name, "func_ann_names", sep = "_"), 'csv', sep = "."), sep = "/"))
   }
 }
 ```
@@ -493,6 +496,9 @@ for (variety in names(varieties)) {
     names(genes) <- c("gene")
     annotations <- go_and_func_enrichment(genes)
     write.csv(annotations, file = paste("results", "different-treatments-within-varieties", paste(paste(name, "annotations", sep = "_"), 'csv', sep = "."), sep = "/"))
+    
+    genes_and_names <- unique(annotations %>% dplyr::select(gene, name))
+    write.csv(genes_and_names, file = paste("results", "different-treatments-within-varieties", paste(paste(name, "func_ann_names", sep = "_"), 'csv', sep = "."), sep = "/"))
   }
 }
 ```
@@ -586,6 +592,9 @@ for (name in names(up_down_degs)) {
     names(genes) <- c("gene")
     annotations <- go_and_func_enrichment(genes)
     write.csv(annotations, file = paste("results", "same-treatment-between-varieties", paste(paste(name, "annotations", sep = "_"), 'csv', sep = "."), sep = "/"))
+    
+    genes_and_names <- unique(annotations %>% dplyr::select(gene, name))
+    write.csv(genes_and_names, file = paste("results", "same-treatment-between-varieties", paste(paste(name, "func_ann_names", sep = "_"), 'csv', sep = "."), sep = "/"))
   }
 }
 ```
@@ -643,8 +652,11 @@ rownames(top20) <- NULL
 
 top20_annotations <- go_and_func_enrichment(as.data.frame(table(top20$gene, dnn = c("gene"))))
 
+top20_genes_and_names <- unique(top20_annotations %>% dplyr::select(gene, name))
+
 write.csv(top20, "results/duke_inf_top20.csv")
 write.csv(top20_annotations, "results/duke_inf_top20_annotations.csv")
+write.csv(top20_genes_and_names, "results/duke_inf_top20_func_ann_names.csv")
 ```
 
 ## Hold-out S.Mira
@@ -662,8 +674,11 @@ rownames(top20) <- NULL
 
 top20_annotations <- go_and_func_enrichment(as.data.frame(table(top20$gene, dnn = c("gene"))))
 
+top20_genes_and_names <- unique(top20_annotations %>% dplyr::select(gene, name))
+
 write.csv(top20, "results/smira_inf_top20.csv")
 write.csv(top20_annotations, "results/smira_inf_top20_annotations.csv")
+write.csv(top20_genes_and_names, "results/smira_inf_top20_func_ann_names.csv")
 ```
 
 ## Hold-out S.Shona
@@ -681,8 +696,12 @@ rownames(top20) <- NULL
 
 top20_annotations <- go_and_func_enrichment(as.data.frame(table(top20$gene, dnn = c("gene"))))
 
+top20_genes_and_names <- unique(top20_annotations %>% dplyr::select(gene, name))
+
+
 write.csv(top20, "results/sshona_inf_top20.csv")
 write.csv(top20_annotations, "results/sshona_inf_top20_annotations.csv")
+write.csv(top20_genes_and_names, "results/sshona_inf_top20_func_ann_names.csv")
 ```
 
 # Save all data

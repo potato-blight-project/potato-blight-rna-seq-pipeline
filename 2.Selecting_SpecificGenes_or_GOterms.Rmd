@@ -1,0 +1,294 @@
+---
+title: "Transcriptomic analysis of potato samples infected with P. infestans - Selecting specific genes or GO terms"
+author: "Patricia Ponce"
+date: "November, 2021"
+output: 
+  html_document:
+    self_contained: false
+fontsize: 15pt
+---
+
+PURPOSE: Subseting data from an specific genes or GO term
+
+INPUT: DEGs with their annotation.
+
+OUTPUT: 
+
+
+
+Path of the folder for the inputs and outputs:
+```{r}
+setwd("Y:/7.DEAnalysis_blight/")
+```
+
+
+Packages to employ for the analysis:
+```{r}
+library(dplyr) 
+library(tibble)
+library(data.table)
+library(gridExtra)
+```
+
+
+## 1.Input 
+
+(1.1)Input 1 - TOL vs SUS in CONTROL: Expression of the genes (without any threshold) in any time point:
+```{r}
+load("2.DESeq2_output_Control/res.TOLS_vs_Sus_Control.RData") #........................(1)
+
+#Modifing the format of the tables of the genes NOT FILTERED by padj or log2FC, in (1):
+DESEq.SMira_vs_Duke.Control <- as.data.frame(res.SMira.Control %>% data.frame() %>% rownames_to_column(var="gene") %>% as_tibble())
+DESEq.SShona_vs_Duke.Control <- as.data.frame(res.SShona.Control %>% data.frame() %>% rownames_to_column(var="gene") %>% as_tibble())
+```
+
+(1.2)Input 2 - Input 1 - TOL vs SUS in CONTROL: DEGs linked with GO terms:
+```{r}
+
+DEG.SMira_vs_Duke.Control.GO <- read.csv("DEG.SMira_vs_Duke.Control.annotation.csv", header = T, sep = ",")
+DEG.SShona_vs_Duke.Control.GO <- read.csv("DEG.SShona_vs_Duke.Control.annotation.csv", header = T, sep = ",")
+DEG.TOLS_vs_Duke.Control.UP.GO <- read.csv("DEG.TOLs_vs_Duke.UP.Control.annotation.csv", header = T, sep = ",")
+DEG.TOLS_vs_Duke.Control.DOWN.GO <- read.csv("DEG.TOLs_vs_Duke.DOWN.Control.annotation.csv", header = T, sep = ",")
+```
+
+
+(1.3)Input 3 - 48INF/48Out vs Mock in each variety: Expression of the genes (without any threshold) in any time point:
+```{r}
+load("2.DESeq2_output_48h/res.48h_vs_Mock.RData") #........................(1)
+
+#Modifing the format of the tables of the genes NOT FILTERED by padj or log2FC, in (1):
+DESEq.Duke.48Inf_vs_Mock <- as.data.frame(res.Duke.Inf %>% data.frame() %>% rownames_to_column(var="gene") %>% as_tibble())
+DESEq.Duke.48Out_vs_Mock <- as.data.frame(res.Duke.Out %>% data.frame() %>% rownames_to_column(var="gene") %>% as_tibble())
+DESEq.SMira.48Inf_vs_Mock <- as.data.frame(res.SMira.Inf %>% data.frame() %>% rownames_to_column(var="gene") %>% as_tibble())
+DESEq.SMira.48Out_vs_Mock <- as.data.frame(res.SMira.Out %>% data.frame() %>% rownames_to_column(var="gene") %>% as_tibble())
+DESEq.SShona.48Inf_vs_Mock <- as.data.frame(res.SShona.Inf %>% data.frame() %>% rownames_to_column(var="gene") %>% as_tibble())
+DESEq.SShona.48Out_vs_Mock <- as.data.frame(res.SShona.Out %>% data.frame() %>% rownames_to_column(var="gene") %>% as_tibble())
+
+rm(res.Duke.Inf, res.Duke.Out, res.SMira.Inf, res.SMira.Out, res.SShona.Inf, res.SShona.Out)
+```
+
+(1.4)Input 4 - 48INF/48Out vs Mock in each variety: DEGs linked with GO terms:
+
+```{r}
+load("2.DESeq2_output_48h/DEG_48h_vs_Mock_Annotation.RData")
+DEG.Duke.48Inf_vs_Mock.GO   <- DEG.Duke.Inf.annotation
+DEG.Duke.48Out_vs_Mock.GO   <- DEG.Duke.Out.annotation
+DEG.SMira.48Inf_vs_Mock.GO  <- DEG.SMira.Inf.annotation
+DEG.SMira.48Out_vs_Mock.GO  <- DEG.SMira.Out.annotation
+DEG.SShona.48Inf_vs_Mock.GO <- DEG.SShona.Inf.annotation
+DEG.SShona.48Out_vs_Mock.GO <- DEG.SShona.Out.annotation
+rm("DEG.Duke.Inf.annotation","DEG.Duke.Out.annotation",
+   "DEG.SMira.Inf.annotation","DEG.SMira.Out.annotation",
+   "DEG.SShona.Inf.annotation","DEG.SShona.Out.annotation")
+
+```
+
+
+(1.5) Input 5: DEGs in each TOl vs Duke in all treatments (Control, Mock-48h, InsideInfected-48h, OutsideInfected-48h)
+```{r}
+Constitutive <- read.csv("EachDEG.TOL_vs_Duke_AnyTreat_up_down.csv", header = T, sep = ",")
+```
+
+
+(1.6)Input 6: GLay gene clusters
+```{r}
+GLay <- read.delim("clipboard", sep = "\t", header = T)
+```
+
+
+
+## 2.Generating the tables:
+
+
+Is the GOterm inside the potato genome v6.1 data?:
+
+Data with the descriptions of the gene function, Athaliana_geneID and v404 link of each gene:
+```{r}
+load(file = "Z:/1.PotatoDroughtOut_genomev6/4.GO_analysis/gProfile_FileHC.GeneTransID.Name.GO/potv6_Ath_potv404.RData") 
+#Table: potv6_Ath_potv404
+colnames(potv6_Ath_potv404)[3] <- "gene"
+```
+
+GOterms to check:
+```{r}
+GOs <- c("GO:0071554","GO:0071669","GO:0045492","GO:0010416","GO:0045493","GO:1990937","GO:0010413","GO:2000895","GO:2000990","GO:2000989","GO:2000899","GO:2000988") 
+
+#GOs <- c("GO:0042546","GO:0052544","GO:2000067","GO:0009311")
+
+#GOs <-"GO:0009626"
+
+length(intersect(potv6_Ath_potv404$GOterm, GOs ))
+intersect(potv6_Ath_potv404$GOterm,GOs)
+```
+
+
+## GOterm input:
+Change the GO ID depending on what you want to observe:
+
+For cell wall related genes after 48hpi:
+-LIGNIN: GO:0046274  BP
+-XYLOGLUCAN: GO:0010411  BP
+-LIGNIN: GO:0009809  BP
+-CUTIN: GO:0080051
+-CELL WALL BIOGENESIS: GO:0042546  BP
+-Extracellular region: GO:0005576 CC
+-plant type cell wall: GO:0009505 CC
+-extracellular space: GO:0005615  CC
+-xyloglucan:xyloglucosil_transferase activity:  GO:0016762 MF
+-cellulase activity: GO:0008810 MF
+
+For genes that response to pathogen after 48hpi:
+-response to chitin: GO:0010200 BP
+-regulation of defense response: GO:0031347 BP
+-response to wounding: GO:0009611 BP
+-defense response to nematode: GO:0002215 BP
+-defense response: GO:0006952 BP
+-apoplast: GO:0048046
+
+++
+For cell wall related genes for "Constitutive" genes:
+-defense response by callose deposition in cell wall: GO:0052544 BP
+-extracellular region: GO:0005576 CC
+-casparian strip: GO:0048226 CC
+-UDP-glycosyltransferase: GO:0008194 MF
+-glucan_endo-1,3-beta-D-glucosidase_activity: GO:0042973 MF
+-phenylalanine amonia lyase- activity: GO:0045548 MF
+
+For genes that response to pathogen for "Constitutive" genes:
+-Defense response to nematode: GO:0002215 BP
+-Detection of bacterium: GO:0016045 BP
+-plant-type hypersensitive response: GO:0009626 BP
+-defense response: GO:0006952 BP
+-response to oomycetes: GO:0002239 BP
+-defense response to fungus: GO:0050832 BP
+-response to wounding: GO:0009611 BP
+
+
+
+```{r}
+GOID = "GO:0045548"
+```
+
+
+
+(2.1) Expression of DEGs of an SPECIFIC GO TERM found in CONTROL:
+```{r}
+#Finding all the DEGs:
+EachTOL_vs_Sus.Control.genes <- union(subset(DEG.SMira_vs_Duke.Control.GO,GOterm == GOID)$gene, #6
+                                      subset(DEG.SShona_vs_Duke.Control.GO,GOterm == GOID)$gene) #41  #total = 41
+
+
+#Now find the expression of all these genes, but no filtered by padj or foldchange, so we can observe the expression of of all the genes  that are DE in at least one time point:
+
+#1st extract all the info about the annotation:
+EachTOL_vs_Sus.Control.annot <- unique(rbind(
+                                       subset(DEG.SMira_vs_Duke.Control.GO, gene %in% EachTOL_vs_Sus.Control.genes)[,c(2,9,11)], 
+                                       subset(DEG.SShona_vs_Duke.Control.GO, gene %in% EachTOL_vs_Sus.Control.genes)[,c(2,9,11)]))
+
+
+#2nd adding the expression of the previous table:
+
+EachTOL_vs_Sus.Control.expr <- merge(merge(EachTOL_vs_Sus.Control.annot, 
+                                     subset(DESEq.SMira_vs_Duke.Control, gene %in% EachTOL_vs_Sus.Control.genes)[,c(1,3,7)], by = "gene", all = T),
+                                     subset(DESEq.SShona_vs_Duke.Control, gene  %in% EachTOL_vs_Sus.Control.genes)[,c(1,3,7)], by = "gene", all = T)
+                                          
+colnames(EachTOL_vs_Sus.Control.expr) <- c("gene", "Athaliana_ID","Gene_Annotaion",
+                                             "SMira.LFC.C","SMira.padj.C",
+                                             "SShona.LFC.C","SShona.padj.C")
+
+
+View(unique(EachTOL_vs_Sus.Control.expr))
+```
+
+
+(2.2) Expression of genes with padj < 0.05 of an SPECIFIC GO TERM found in CONTROL:
+
+These genes have a padj < 0.05 in our data?
+Input data:
+```{r}
+load("res.TOLs_vs_Duke.Control.Annotation.RData")
+#Files:
+#-res.SMira_vs_Duke.Control.Annotation,
+#-res.SMira_vs_Duke.Control.Annotation, file =)
+```
+
+
+
+```{r}
+#Selecting genes in a GO term:
+Potv6Genes.GO <- subset(potv6_Ath_potv404,GOterm == GOID)$gene
+
+#Selecting genes in a GO term with padj < 0.05
+SMira.genes.GO <- subset(DESEq.SMira_vs_Duke.Control,gene %in% Potv6Genes.GO & padj < 0.05)[,c(1,3,7)]
+SShona.genes.GO <- subset(DESEq.SShona_vs_Duke.Control,gene %in% Potv6Genes.GO & padj < 0.05)[,c(1,3,7)]
+
+#If there are genes with a  padj < 0.05, then generate a table with their log2FC and annotation names:
+if(length(SMira.genes.GO$gene) > 1 | length(SShona.genes.GO$gene) > 1) 
+  (merge(unique(subset(res.SMira_vs_Duke.Control.Annotation,gene %in% SMira.genes.GO$gene)[,c(1,3,7,8,10)]),
+         unique(subset(res.SMira_vs_Duke.Control.Annotation,gene %in% SMira.genes.GO$gene)[,c(1,3,7,8,10)]), by = "gene", all=T))
+```
+
+
+
+
+(2.3) Expression of DEGs of an SPECIFIC GO TERM found after 48 OF INFECTION (inf. vs Mock) in each variety
+```{r}
+#Selecting genes in a GO term:
+Potv6Genes.GO <- subset(potv6_Ath_potv404,GOterm == GOID)$gene
+
+#Selecting genes inside the GO term:
+SMira.genes.GO <- subset(DEG.SMira.48Inf_vs_Mock.GO,gene %in% Potv6Genes.GO)[,c(1,3,7)]
+SShona.genes.GO <- subset(DEG.SShona.48Inf_vs_Mock.GO,gene %in% Potv6Genes.GO)[,c(1,3,7)]
+Duke.genes.GO <- subset(DEG.Duke.48Inf_vs_Mock.GO,gene %in% Potv6Genes.GO)[,c(1,3,7)]
+
+#Merging data:
+
+View(unique(merge(merge(SMira.genes.GO, 
+                 SShona.genes.GO, by = "gene", all= TRUE),
+                 Duke.genes.GO, by = "gene", all= TRUE)))
+
+
+View(as.data.frame(unique(merge(merge(SMira.genes.GO, 
+                 SShona.genes.GO, by = "gene", all= TRUE),
+                 Duke.genes.GO, by = "gene", all= TRUE)$gene)))
+
+
+write.csv(as.data.frame(unique(merge(merge(SMira.genes.GO, 
+                 SShona.genes.GO, by = "gene", all= TRUE),
+                 Duke.genes.GO, by = "gene", all= TRUE)$gene)), file = "lala.csv")
+
+```
+
+
+(2.4) Expression of DEGs of an SPECIFIC GO TERM found in the group of "Constitutive" genes
+```{r}
+#Selecting genes in a GO term:
+Potv6Genes.GO <- subset(potv6_Ath_potv404,GOterm == GOID)$gene
+
+#Selecting genes in a GO term with padj < 0.05
+Constitutive.GO <- subset(Constitutive,gene %in% Potv6Genes.GO)[,c(2,3,5:14)]
+
+View(unique(as.data.frame(Constitutive.GO[,1])))
+
+#write.csv(as.data.frame(Constitutive.GO[,1]), "lala.csv")
+
+```
+
+
+(2.5) Expression of DEGs of an SPECIFIC GO TERM found in a GLay cluster
+```{r}
+#Selecting genes in a GO term:
+Potv6Genes.GO <- subset(potv6_Ath_potv404,GOterm == GOID)$gene
+
+#Selecting genes in a GO term:
+GLay.GO <- subset(GLay,gene %in% Potv6Genes.GO)
+
+View(GLay.GO)
+
+```
+
+
+
+
+
+
