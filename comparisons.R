@@ -1,4 +1,4 @@
-create_comparisons <- function(deseq_object, contrasts) {
+create_comparisons <- function(deseq_object, comparisons) {
   res = list()
   
   for (comparison_name in names(comparisons)) {

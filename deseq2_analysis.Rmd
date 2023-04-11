@@ -83,6 +83,8 @@ library(DEGreport)
 library(EnhancedVolcano)
 library(ggplot2)
 library(pheatmap)
+library(gplots)
+library(grDevices)
 library(RColorBrewer)
 library(pheatmap)
 library(dplyr)
@@ -221,10 +223,11 @@ dds_Blight <- dds_Blight[keep,]
 
 dds_Blight$variety <- relevel(dds_Blight$variety, ref = c("Duke"))
 dds_Blight$treatment <- relevel(dds_Blight$treatment, ref = c("Mock"))
-#dds_Blight$treatment <- relevel(dds_Blight$treatment, ref = c("Control"))
 
 dds_Blight <- DESeq(dds_Blight)
-resultsNames(dds_Blight) # it's the input for "name" and "contrast"
+
+dds_Blight$treatment <- relevel(dds_Blight$treatment, ref = c("Control"))
+dds_Blight_varieties_mock <- DESeq(dds_Blight)
 ```
 
 # Exploratory analysis
@@ -319,6 +322,7 @@ Data to compare:
 
 ```{r}
 resultsNames(dds_Blight) # input for "name" and "contrast"
+resultsNames(dds_Blight_varieties_mock)
 ```
 
 For the comparison: - Base_level: Duke / Mock - res: To get the pvalue
@@ -333,21 +337,34 @@ Pairwise comparisons between samples (Inf/OutInf vs Mock and tolerant vs Duke in
 comparisons = list(
   res.Duke.Out = c("treatment_OutInf_vs_Mock"),
   res.Duke.Inf = c("treatment_Inf_vs_Mock"),
+  res.Duke.Control = c("treatment_Control_vs_Mock"),
+  
   res.SMira.Out = c("treatment_OutInf_vs_Mock","varietySMira.treatmentOutInf"),
   res.SMira.Inf = c("treatment_Inf_vs_Mock","varietySMira.treatmentInf"),
+  res.SMira.Control = c("treatment_Control_vs_Mock","varietySMira.treatmentControl"),
+  
   res.SShona.Out = c("treatment_OutInf_vs_Mock","varietySShona.treatmentOutInf"),
   res.SShona.Inf = c("treatment_Inf_vs_Mock","varietySShona.treatmentInf"),
+  res.SShona.Control = c("treatment_Control_vs_Mock","varietySShona.treatmentControl"),
   
   res.SMira_vs_Duke.Out = c("variety_SMira_vs_Duke" ,"varietySMira.treatmentOutInf"),
   res.SMira_vs_Duke.Inf = c("variety_SMira_vs_Duke" ,"varietySMira.treatmentInf"),
+  res.SMira_vs_Duke.Control = c("variety_SMira_vs_Duke" ,"varietySMira.treatmentControl"),
+  
   res.SShona_vs_Duke.Out = c("variety_SShona_vs_Duke","varietySShona.treatmentOutInf"),
   res.SShona_vs_Duke.Inf = c("variety_SShona_vs_Duke","varietySShona.treatmentInf"),
-  
-  res.SMira_vs_Duke.Control = c("variety_SMira_vs_Duke" ,"varietySMira.treatmentControl"),
   res.SShona_vs_Duke.Control = c("variety_SShona_vs_Duke" ,"varietySShona.treatmentControl")
 )
 
+comparisons_varieties_mock <- list(
+  res.SMira_vs_Duke.Mock = c('variety_SMira_vs_Duke', 'varietySMira.treatmentMock'),
+  res.SShona_vs_Duke.Mock = c('variety_SShona_vs_Duke', 'varietySShona.treatmentMock')
+)
+
 res <- create_comparisons(dds_Blight, comparisons)
+res_varieties_mock <- create_comparisons(dds_Blight_varieties_mock, comparisons_varieties_mock)
+
+res <- c(res, res_varieties_mock)
 ```
 
 # Selecting Differentially Expressed Genes (DEGs)
@@ -371,14 +388,14 @@ if (use_v4) {
 } else {
   go_annotations = read.table(file = './analysis-data/DM_1-3_516_R44_potato.v6.1.working_models.go.txt', sep = '\t', header = FALSE)
   go_annotations = go_annotations %>%
-    mutate(gene = str_remove(V2, '\\.\\d+$')) %>%
-    select(V2, gene, V5, V6) %>%
-    rename(transcript_id = V2, GOterm = V5, TAIR = V6)
+    dplyr::mutate(gene = str_remove(V2, '\\.\\d+$')) %>%
+    dplyr::select(V2, gene, V5, V6) %>%
+    dplyr::rename(transcript_id = 1, GOterm = 3, TAIR = 4)
   
   func_annotations = read.table(file = './analysis-data/DM_1-3_516_R44_potato.v6.1.working_models.func_anno.txt', sep = '\t', header = FALSE)
   func_annotations = func_annotations %>%
-    mutate(gene = str_remove(V1, '\\.\\d+$')) %>%
-    rename(transcript_id = V1, name = V2)
+    dplyr::mutate(gene = str_remove(V1, '\\.\\d+$')) %>%
+    dplyr::rename(transcript_id = V1, name = V2)
 }
 ```
 
@@ -388,8 +405,8 @@ go_and_func_enrichment <- function (.data) {
     merge(.data, potv6_Ath_potv404, by ="gene", all.x = T)
   } else {
     merge(merge(.data, go_annotations, by="gene", all.x = T), func_annotations, by="transcript_id", all.x = T) %>%
-      select(-gene.y) %>%
-      rename(gene = gene.x)
+      dplyr::select(-gene.y) %>%
+      dplyr::rename(gene = gene.x)
   }
 }
 ```
@@ -623,6 +640,222 @@ write.csv(mira_constitutive_up_annotated_genes, file = "results/same-treatment-b
 write.csv(tolerant_constitutive_up, file = 
 "results/same-treatment-between-varieties/tolerant-constitutive-upregulation.csv")
 write.csv(tolerant_constitutive_up_annotated_genes, file = "results/same-treatment-between-varieties/tolerant-constitutive-upregulation-annotations.csv")
+```
+
+# Selection of genes for investigation
+
+```{r}
+prgs <- readLines('results/prgs')
+```
+
+# Heatmaps
+
+
+```{r}
+source('./heatmap.R')
+
+if (!dir.exists('results/heatmaps')) {
+  dir.create('results/heatmaps')
+}
+
+heatmap_definition <- list(
+  inf = list(
+    comparisons = c('DEG.Duke.Inf', 'DEG.SMira.Inf', 'DEG.SShona.Inf'),
+    suffixes = c('_Duke', '_Mira', '_Shona')
+  ),
+  outinf = list(
+    comparisons = c('DEG.Duke.Out', 'DEG.SMira.Out', 'DEG.SShona.Out'),
+    suffixes = c('_Duke', '_Mira', '_Shona')
+  ),
+  control = list(
+    comparisons = c('DEG.Duke.Control', 'DEG.SMira.Control', 'DEG.SShona.Control'),
+    suffixes = c('_Duke', '_Mira', '_Shona')
+  ),
+  mira_vs_duke = list(
+    comparisons = c('DEG.SMira_vs_Duke.Control', 'DEG.SMira_vs_Duke.Mock', 'DEG.SMira_vs_Duke.Inf', 'DEG.SMira_vs_Duke.Out'),
+    suffixes = c('_Control', '_Mock', '_Inf', '_OutInf')
+  ),
+  shona_vs_duke = list(
+    comparisons = c('DEG.SShona_vs_Duke.Control', 'DEG.SShona_vs_Duke.Mock', 'DEG.SShona_vs_Duke.Inf', 'DEG.SShona_vs_Duke.Out'),
+    suffixes = c('_Control', '_Mock', '_Inf', '_OutInf')
+  )
+)
+
+# Phosphorylation
+go_terms_phosphorylation <- c(
+  'GO:0006468',
+  'GO:0009800',
+  'GO:0004672',
+  'GO:0016301',
+  'GO:1016310',
+  'GO:0106311',
+  'GO:0004674',
+  'GO:0080163',
+  'GO:0000160',
+  'GO:0016310',
+  'GO:0004675',
+  'GO:0033612',
+  'GO:0004332',
+  'GO:0004864',
+  'GO:0000976',
+  'GO:0009055'
+)
+
+mock_vs_inf_filter <- function(x) {
+  rowSums(!is.na(select(x, ends_with('_inf')))) >= 1
+}
+
+plot_heatmap(
+  heatmap_definition,
+  annotated_degs,
+  go_terms_phosphorylation,
+  filter_by = 'GOterm',
+  filter_fn = mock_vs_inf_filter,
+  filename = 'results/heatmaps/phosphorylation.pdf'
+)
+
+# Hormones
+go_terms_hormones <- c(
+  "GO:0009737",
+  "GO:0009738",
+  "GO:0009873",
+  "GO:2000022",
+  "GO:0009753",
+  "GO:0009755",
+  "GO:0009695",
+  "GO:0009688",
+  "GO:0009694",
+  "GO:0052694"
+)
+
+plot_heatmap(
+  heatmap_definition,
+  annotated_degs,
+  go_terms_hormones,
+  filter_by = 'GOterm',
+  filter_fn = mock_vs_inf_filter,
+  filename = 'results/heatmaps/hormones.pdf'
+)
+
+# R genes
+tol_vs_duke_filter <- function(x) {
+  rowSums(!is.na(dplyr::select(x, ends_with('mira_vs_duke')))) == 4 | rowSums(!is.na(dplyr::select(x, ends_with('shona_vs_duke')))) == 4
+}
+
+plot_heatmap(
+  heatmap_definition,
+  annotated_degs,
+  prgs,
+  filter_by = 'transcript_id',
+  filter_fn = tol_vs_duke_filter,
+  filename = 'results/heatmaps/rgenes.pdf'
+)
+```
+
+# Bar charts
+
+```{r}
+if (!dir.exists('results/bar-charts')) {
+  dir.create('results/bar-charts')
+}
+
+bup_data <- data.frame(
+  values = c(
+    nrow(up_down_degs$DEG.SMira_vs_Duke.Control.UP),
+    nrow(up_down_degs$DEG.SShona_vs_Duke.Control.UP),
+    length(intersect(up_down_degs$DEG.SMira_vs_Duke.Control.UP$gene, up_down_degs$DEG.SShona_vs_Duke.Control.UP$gene)),
+    
+    nrow(up_down_degs$DEG.SMira_vs_Duke.Mock.UP),
+    nrow(up_down_degs$DEG.SShona_vs_Duke.Mock.UP),
+    length(intersect(up_down_degs$DEG.SMira_vs_Duke.Mock.UP$gene, up_down_degs$DEG.SShona_vs_Duke.Mock.UP$gene)),
+    
+    nrow(up_down_degs$DEG.SMira_vs_Duke.Inf.UP),
+    nrow(up_down_degs$DEG.SShona_vs_Duke.Inf.UP),
+    length(intersect(up_down_degs$DEG.SMira_vs_Duke.Inf.UP$gene, up_down_degs$DEG.SShona_vs_Duke.Inf.UP$gene)),
+    
+    nrow(up_down_degs$DEG.SMira_vs_Duke.Out.UP),
+    nrow(up_down_degs$DEG.SShona_vs_Duke.Out.UP),
+    length(intersect(up_down_degs$DEG.SMira_vs_Duke.Out.UP$gene, up_down_degs$DEG.SShona_vs_Duke.Out.UP$gene)),
+    
+    length(Reduce(intersect, list(up_down_degs$DEG.SMira_vs_Duke.Control.UP$gene, up_down_degs$DEG.SMira_vs_Duke.Mock.UP$gene, up_down_degs$DEG.SMira_vs_Duke.Inf.UP$gene, up_down_degs$DEG.SMira_vs_Duke.Out.UP$gene))),
+    length(Reduce(intersect, list(up_down_degs$DEG.SShona_vs_Duke.Control.UP$gene, up_down_degs$DEG.SShona_vs_Duke.Mock.UP$gene, up_down_degs$DEG.SShona_vs_Duke.Inf.UP$gene, up_down_degs$DEG.SShona_vs_Duke.Out.UP$gene))),
+    length(Reduce(intersect, list(up_down_degs$DEG.SMira_vs_Duke.Control.UP$gene, up_down_degs$DEG.SMira_vs_Duke.Mock.UP$gene, up_down_degs$DEG.SMira_vs_Duke.Inf.UP$gene, up_down_degs$DEG.SMira_vs_Duke.Out.UP$gene, up_down_degs$DEG.SShona_vs_Duke.Control.UP$gene, up_down_degs$DEG.SShona_vs_Duke.Mock.UP$gene, up_down_degs$DEG.SShona_vs_Duke.Inf.UP$gene, up_down_degs$DEG.SShona_vs_Duke.Out.UP$gene)))
+  ),
+  group = factor(
+    rep(c('Control', 'Mock', 'Infected area', 'Outside infected\narea', 'In all treatments'), each = 3),
+    levels = c('Control', 'Mock', 'Infected area', 'Outside infected\narea', 'In all treatments')
+  ),
+  subgroup = factor(
+    rep(c('Sarpo Mira vs Duke', 'Sarpo Shona vs Duke', 'In both Sarpos'), 5),
+    levels = c('Sarpo Mira vs Duke', 'Sarpo Shona vs Duke', 'In both Sarpos')
+  )
+)
+
+p <- ggplot(bup_data,
+       aes(x = group,
+           y = values,
+           fill = subgroup)) +
+  geom_col(position = position_dodge(0.6), width = 0.5) +
+  geom_text(aes(label = values, group = subgroup), position = position_dodge(0.6), vjust = -0.5, size = 2.5) +
+  theme_bw() +
+  theme(
+    axis.title.x=element_blank(),
+    axis.title.y=element_blank(),
+    panel.grid.major.x = element_blank(),
+    legend.title= element_blank()
+  )
+ggsave(filename = 'results/bar-charts/up.png', width = 10, height = 6)
+
+
+
+
+
+bdown_data <- data.frame(
+  values = c(
+    nrow(up_down_degs$DEG.SMira_vs_Duke.Control.DOWN),
+    nrow(up_down_degs$DEG.SShona_vs_Duke.Control.DOWN),
+    length(intersect(up_down_degs$DEG.SMira_vs_Duke.Control.DOWN$gene, up_down_degs$DEG.SShona_vs_Duke.Control.DOWN$gene)),
+    
+    nrow(up_down_degs$DEG.SMira_vs_Duke.Mock.DOWN),
+    nrow(up_down_degs$DEG.SShona_vs_Duke.Mock.DOWN),
+    length(intersect(up_down_degs$DEG.SMira_vs_Duke.Mock.DOWN$gene, up_down_degs$DEG.SShona_vs_Duke.Mock.DOWN$gene)),
+    
+    nrow(up_down_degs$DEG.SMira_vs_Duke.Inf.DOWN),
+    nrow(up_down_degs$DEG.SShona_vs_Duke.Inf.DOWN),
+    length(intersect(up_down_degs$DEG.SMira_vs_Duke.Inf.DOWN$gene, up_down_degs$DEG.SShona_vs_Duke.Inf.DOWN$gene)),
+    
+    nrow(up_down_degs$DEG.SMira_vs_Duke.Out.DOWN),
+    nrow(up_down_degs$DEG.SShona_vs_Duke.Out.DOWN),
+    length(intersect(up_down_degs$DEG.SMira_vs_Duke.Out.DOWN$gene, up_down_degs$DEG.SShona_vs_Duke.Out.DOWN$gene)),
+    
+    length(Reduce(intersect, list(up_down_degs$DEG.SMira_vs_Duke.Control.DOWN$gene, up_down_degs$DEG.SMira_vs_Duke.Mock.DOWN$gene, up_down_degs$DEG.SMira_vs_Duke.Inf.DOWN$gene, up_down_degs$DEG.SMira_vs_Duke.Out.DOWN$gene))),
+    length(Reduce(intersect, list(up_down_degs$DEG.SShona_vs_Duke.Control.DOWN$gene, up_down_degs$DEG.SShona_vs_Duke.Mock.DOWN$gene, up_down_degs$DEG.SShona_vs_Duke.Inf.DOWN$gene, up_down_degs$DEG.SShona_vs_Duke.Out.DOWN$gene))),
+    length(Reduce(intersect, list(up_down_degs$DEG.SMira_vs_Duke.Control.DOWN$gene, up_down_degs$DEG.SMira_vs_Duke.Mock.DOWN$gene, up_down_degs$DEG.SMira_vs_Duke.Inf.DOWN$gene, up_down_degs$DEG.SMira_vs_Duke.Out.DOWN$gene, up_down_degs$DEG.SShona_vs_Duke.Control.DOWN$gene, up_down_degs$DEG.SShona_vs_Duke.Mock.DOWN$gene, up_down_degs$DEG.SShona_vs_Duke.Inf.DOWN$gene, up_down_degs$DEG.SShona_vs_Duke.Out.DOWN$gene)))
+  ),
+  group = factor(
+    rep(c('Control', 'Mock', 'Infected area', 'Outside infected\narea', 'In all treatments'), each = 3),
+    levels = c('Control', 'Mock', 'Infected area', 'Outside infected\narea', 'In all treatments')
+  ),
+  subgroup = factor(
+    rep(c('Sarpo Mira vs Duke', 'Sarpo Shona vs Duke', 'In both Sarpos'), 5),
+    levels = c('Sarpo Mira vs Duke', 'Sarpo Shona vs Duke', 'In both Sarpos')
+  )
+)
+
+p <- ggplot(bdown_data,
+       aes(x = group,
+           y = values,
+           fill = subgroup)) +
+  geom_col(position = position_dodge(0.6), width = 0.5) +
+  geom_text(aes(label = values, group = subgroup), position = position_dodge(0.6), vjust = -0.5, size = 2.5) +
+  theme_bw() +
+  theme(
+    axis.title.x=element_blank(),
+    axis.title.y=element_blank(),
+    panel.grid.major.x = element_blank(),
+    legend.title= element_blank()
+  )
+ggsave(filename = 'results/bar-charts/down.png', width = 10, height = 6)
 ```
 
 # Plotting the normalized gene counts across the different time points.
