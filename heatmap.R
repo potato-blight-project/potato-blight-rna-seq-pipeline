@@ -36,20 +36,17 @@ create_heatmap_matrix <- function(block_list, suffixes, filter_fn, comparison_li
   heatmap_data <- heatmap_data %>% dplyr::select(gene, gene_and_name, starts_with('log2FoldChange'))
   
   # TODO: pass in go_annotations!
-  heatmap_data <- merge(heatmap_data, go_annotations, by="gene", all.x = T) %>%
-    filter(GOterm %in% comparison_list) %>%
-    dplyr::select(-transcript_id, -TAIR) %>%
-    distinct(gene, .keep_all = TRUE) %>%
-    relocate(GOterm, .after = gene_and_name) %>%
-    arrange(GOterm)
-  
-  # if (use_all) {
-  #   heatmap_data <- heatmap_data %>% dplyr::filter(rowSums(!is.na(.)) > min_columns + 2)
-  # }
+  # Uncomment for GO terms annotation! This does NOT work with gene labels atm
+  # heatmap_data <- merge(heatmap_data, go_annotations, by="gene", all.x = T) %>%
+  #   filter(GOterm %in% comparison_list) %>%
+  #   dplyr::select(-transcript_id, -TAIR) %>%
+  #   distinct(gene, .keep_all = TRUE) %>%
+  #   relocate(GOterm, .after = gene_and_name) %>%
+  #   arrange(GOterm)
   
   return(list(
     heatmap_data = heatmap_data,
-    heatmap_data_matrix = as.matrix(heatmap_data %>% dplyr::select(-gene, -gene_and_name, -GOterm))
+    heatmap_data_matrix = as.matrix(heatmap_data %>% dplyr::select(starts_with('log2FoldChange'))) #-gene, -gene_and_name, -GOterm))
   ))
 }
 
@@ -85,11 +82,13 @@ plot_heatmap <- function(
     use_all = use_all
   )
   
-  rle_go_term <- rle(heatmap_data_result$heatmap_data$GOterm)
-  run_lengths <- rle_go_term$lengths
-  rowsep <- cumsum(run_lengths)
+  # Uncomment for GO terms annotation! This does NOT work with gene labels atm
+  # rle_go_term <- rle(heatmap_data_result$heatmap_data$GOterm)
+  # run_lengths <- rle_go_term$lengths
+  # rowsep <- cumsum(run_lengths)
   
-  writeLines(unique(heatmap_data_result$heatmap_data$GOterm), file(paste(dirname(filename), 'go_terms.txt', sep = '/')))
+  # writeLines(unique(heatmap_data_result$heatmap_data$GOterm), file(paste(dirname(filename), 'go_terms.txt', sep = '/')))
+  rowsep = NA
   
   pdf(filename, width = width, height = height)
   heatmap.2(heatmap_data_result$heatmap_data_matrix,

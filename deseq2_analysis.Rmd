@@ -744,7 +744,7 @@ gene_labels <- head(unique(annotated_degs$DEG.Duke.Inf$gene), 100)
 plot_heatmap(
   heatmap_definition,
   annotated_degs,
-  go_terms_hormones,
+  gene_labels,
   filter_by = 'gene',
   filter_fn = mock_vs_inf_filter,
   filename = 'results/heatmaps/test_with_gene_labels.pdf'
