@@ -13,7 +13,7 @@ create_block <- function(degs_list, suffixes) {
   }) %>% purrr::reduce(merge, by = 'gene', all = TRUE)
 }
 
-create_heatmap_matrix <- function(block_list, suffixes, filter_fn, use_all = TRUE) {
+create_heatmap_matrix <- function(block_list, suffixes, filter_fn, comparison_list, use_all = TRUE) {
   heatmap_data <- create_block(block_list, suffixes)
   
   heatmap_data_idx <- heatmap_data %>%
@@ -35,13 +35,21 @@ create_heatmap_matrix <- function(block_list, suffixes, filter_fn, use_all = TRU
   
   heatmap_data <- heatmap_data %>% dplyr::select(gene, gene_and_name, starts_with('log2FoldChange'))
   
+  # TODO: pass in go_annotations!
+  heatmap_data <- merge(heatmap_data, go_annotations, by="gene", all.x = T) %>%
+    filter(GOterm %in% comparison_list) %>%
+    dplyr::select(-transcript_id, -TAIR) %>%
+    distinct(gene, .keep_all = TRUE) %>%
+    relocate(GOterm, .after = gene_and_name) %>%
+    arrange(GOterm)
+  
   # if (use_all) {
   #   heatmap_data <- heatmap_data %>% dplyr::filter(rowSums(!is.na(.)) > min_columns + 2)
   # }
   
   return(list(
     heatmap_data = heatmap_data,
-    heatmap_data_matrix = as.matrix(heatmap_data %>% dplyr::select(-gene, -gene_and_name))
+    heatmap_data_matrix = as.matrix(heatmap_data %>% dplyr::select(-gene, -gene_and_name, -GOterm))
   ))
 }
 
@@ -73,8 +81,15 @@ plot_heatmap <- function(
     block_list = blocks,
     suffixes = unlist(lapply(names(blocks), function(x) { paste0('_', x) })),
     filter_fn = filter_fn,
+    comparison_list = comparison_list,
     use_all = use_all
   )
+  
+  rle_go_term <- rle(heatmap_data_result$heatmap_data$GOterm)
+  run_lengths <- rle_go_term$lengths
+  rowsep <- cumsum(run_lengths)
+  
+  writeLines(unique(heatmap_data_result$heatmap_data$GOterm), file(paste(dirname(filename), 'go_terms.txt', sep = '/')))
   
   pdf(filename, width = width, height = height)
   heatmap.2(heatmap_data_result$heatmap_data_matrix,
@@ -92,8 +107,7 @@ plot_heatmap <- function(
             cexRow = 0.4,
             offsetCol = 0.15,
             colsep = c(3,6,9,13),
-            #rowsep = c(44,54,76,101,107,123), # cellwall:c(44,54,76,101,107,123)
-            #Receptors: c(33, 49, 77,110,112,128,129)
+            rowsep = rowsep,
             symkey = FALSE,
             lhei = c(1, 10),
             lwid = c(1, 6),

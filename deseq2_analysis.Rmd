@@ -711,7 +711,7 @@ plot_heatmap(
   go_terms_phosphorylation,
   filter_by = 'GOterm',
   filter_fn = mock_vs_inf_filter,
-  filename = 'results/heatmaps/phosphorylation.pdf'
+  filename = 'results/heatmaps/phosphorylation_to_analyse.pdf'
 )
 
 # Hormones
@@ -734,10 +734,24 @@ plot_heatmap(
   go_terms_hormones,
   filter_by = 'GOterm',
   filter_fn = mock_vs_inf_filter,
-  filename = 'results/heatmaps/hormones.pdf'
+  filename = 'results/heatmaps/hormones_to_analyse.pdf'
+)
+
+# Example using gene labels
+# TODO: change this
+gene_labels <- head(unique(annotated_degs$DEG.Duke.Inf$gene), 100)
+
+plot_heatmap(
+  heatmap_definition,
+  annotated_degs,
+  go_terms_hormones,
+  filter_by = 'gene',
+  filter_fn = mock_vs_inf_filter,
+  filename = 'results/heatmaps/test_with_gene_labels.pdf'
 )
 
 # R genes
+# TODO: may need reworking!
 tol_vs_duke_filter <- function(x) {
   rowSums(!is.na(dplyr::select(x, ends_with('mira_vs_duke')))) == 4 | rowSums(!is.na(dplyr::select(x, ends_with('shona_vs_duke')))) == 4
 }
