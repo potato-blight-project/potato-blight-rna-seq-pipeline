@@ -1,4 +1,10 @@
-filter_by_list <- function(annotated_degs, comparison, comparison_list, filter_by, use_only_func_ann = TRUE) {
+filter_by_list <- function(
+  annotated_degs,
+  comparison,
+  comparison_list,
+  filter_by,
+  use_only_func_ann = TRUE
+) {
   annotated_degs[[comparison]] %>%
     filter(.data[[filter_by]] %in% comparison_list) %>%
     dplyr::select(-transcript_id, -pvalue, -stat, -baseMean, -TAIR, -GOterm) %>%
@@ -13,7 +19,14 @@ create_block <- function(degs_list, suffixes) {
   }) %>% purrr::reduce(merge, by = 'gene', all = TRUE)
 }
 
-create_heatmap_matrix <- function(block_list, suffixes, filter_fn, comparison_list, use_all = TRUE) {
+create_heatmap_matrix <- function(
+  block_list,
+  suffixes,
+  filter_fn,
+  comparison_list,
+  comparison_list_order,
+  go_annotations
+) {
   heatmap_data <- create_block(block_list, suffixes)
   
   heatmap_data_idx <- heatmap_data %>%
@@ -30,23 +43,30 @@ create_heatmap_matrix <- function(block_list, suffixes, filter_fn, comparison_li
     mutate(func_name = list(first(na.omit(c_across(everything()))))) %>%
     dplyr::select(func_name)
   func_names <- unlist(lapply(func_names$func_name, function (x) { ifelse(length(x) == 0, NA, x) }))
-  heatmap_data$gene_and_name <- paste(heatmap_data$gene, func_names, sep = '_')
-  heatmap_data <- heatmap_data %>% relocate(gene_and_name, .after = gene)
+  heatmap_data$label <- paste(heatmap_data$gene, func_names, sep = '_')
+  heatmap_data <- heatmap_data %>% relocate(label, .after = gene)
   
-  heatmap_data <- heatmap_data %>% dplyr::select(gene, gene_and_name, starts_with('log2FoldChange'))
+  heatmap_data <- heatmap_data %>% dplyr::select(gene, label, starts_with('log2FoldChange'))
   
-  # TODO: pass in go_annotations!
-  # Uncomment for GO terms annotation! This does NOT work with gene labels atm
-  # heatmap_data <- merge(heatmap_data, go_annotations, by="gene", all.x = T) %>%
-  #   filter(GOterm %in% comparison_list) %>%
-  #   dplyr::select(-transcript_id, -TAIR) %>%
-  #   distinct(gene, .keep_all = TRUE) %>%
-  #   relocate(GOterm, .after = gene_and_name) %>%
-  #   arrange(GOterm)
+  if (!is.null(go_annotations)) {
+    heatmap_data <- merge(heatmap_data, go_annotations, by="gene", all.x = T) %>%
+      filter(GOterm %in% comparison_list) %>%
+      dplyr::select(-transcript_id, -TAIR) %>%
+      distinct(gene, .keep_all = TRUE) %>%
+      relocate(GOterm, .after = label)
+    
+    if (!is.null(comparison_list_order)) {
+      heatmap_data <- heatmap_data %>% arrange(match(GOterm, comparison_list_order))
+    } else {
+      heatmap_data <- heatmap_data %>% arrange(GOterm)
+    }
+    
+    heatmap_data$label <- paste(heatmap_data$GOterm, heatmap_data$label, sep = '_')
+  }
   
   return(list(
     heatmap_data = heatmap_data,
-    heatmap_data_matrix = as.matrix(heatmap_data %>% dplyr::select(starts_with('log2FoldChange'))) #-gene, -gene_and_name, -GOterm))
+    heatmap_data_matrix = as.matrix(heatmap_data %>% dplyr::select(starts_with('log2FoldChange')))
   ))
 }
 
@@ -56,10 +76,12 @@ plot_heatmap <- function(
   comparison_list,
   filter_by,
   filter_fn,
+  comparison_list_order = NULL,
+  go_annotations = NULL,
+  label_rows = TRUE,
   filename = 'heatmap.pdf',
   width = 8,
-  height = 10,
-  use_all = TRUE
+  height = 10
 ) {
   blocks <- list()
   
@@ -79,16 +101,24 @@ plot_heatmap <- function(
     suffixes = unlist(lapply(names(blocks), function(x) { paste0('_', x) })),
     filter_fn = filter_fn,
     comparison_list = comparison_list,
-    use_all = use_all
+    comparison_list_order = comparison_list_order,
+    go_annotations = go_annotations
   )
   
-  # Uncomment for GO terms annotation! This does NOT work with gene labels atm
-  # rle_go_term <- rle(heatmap_data_result$heatmap_data$GOterm)
-  # run_lengths <- rle_go_term$lengths
-  # rowsep <- cumsum(run_lengths)
+  if (!is.null(go_annotations)) {
+    rle_go_term <- rle(heatmap_data_result$heatmap_data$GOterm)
+    run_lengths <- rle_go_term$lengths
+    rowsep <- cumsum(run_lengths)
+    writeLines(unique(heatmap_data_result$heatmap_data$GOterm), file(paste(dirname(filename), 'go_terms.txt', sep = '/')))
+  } else {
+    rowsep <- NA
+  }
   
-  # writeLines(unique(heatmap_data_result$heatmap_data$GOterm), file(paste(dirname(filename), 'go_terms.txt', sep = '/')))
-  rowsep = NA
+  if (label_rows) {
+    labels <- heatmap_data_result$heatmap_data$label
+  } else {
+    labels <- NA
+  }
   
   pdf(filename, width = width, height = height)
   heatmap.2(heatmap_data_result$heatmap_data_matrix,
@@ -100,7 +130,7 @@ plot_heatmap <- function(
             col = colorRampPalette(c("blue","white","red")),
             trace = "none", 
             density.info = "none",
-            labRow = heatmap_data_result$heatmap_data$gene_and_name, 
+            labRow = labels,
             labCol = c(rep(c("D", "SM", "SS"), 3), rep(c("C", "M", "Inf", "Out"), 2)),
             cexCol = 0.5,
             cexRow = 0.4,

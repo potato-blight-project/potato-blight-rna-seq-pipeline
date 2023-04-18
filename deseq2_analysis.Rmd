@@ -222,10 +222,12 @@ keep <- rowSums(counts(dds_Blight)) >= 10
 dds_Blight <- dds_Blight[keep,]
 
 dds_Blight$variety <- relevel(dds_Blight$variety, ref = c("Duke"))
-dds_Blight$treatment <- relevel(dds_Blight$treatment, ref = c("Mock"))
 
+# 1. Reference treatment: Mock
+dds_Blight$treatment <- relevel(dds_Blight$treatment, ref = c("Mock"))
 dds_Blight <- DESeq(dds_Blight)
 
+# 2. Reference treatment: Control
 dds_Blight$treatment <- relevel(dds_Blight$treatment, ref = c("Control"))
 dds_Blight_varieties_mock <- DESeq(dds_Blight)
 ```
@@ -681,10 +683,18 @@ heatmap_definition <- list(
   )
 )
 
+mock_vs_inf_filter <- function(x) {
+  rowSums(!is.na(select(x, ends_with('_inf')))) >= 1
+}
+
+tol_vs_duke_filter <- function(x) {
+  rowSums(!is.na(dplyr::select(x, ends_with('mira_vs_duke')))) == 4 | rowSums(!is.na(dplyr::select(x, ends_with('shona_vs_duke')))) == 4
+}
+
 # Phosphorylation
+# ------------------------------------------------------------------------------
 go_terms_phosphorylation <- c(
   'GO:0006468',
-  'GO:0009800',
   'GO:0004672',
   'GO:0016301',
   'GO:1016310',
@@ -695,26 +705,61 @@ go_terms_phosphorylation <- c(
   'GO:0016310',
   'GO:0004675',
   'GO:0033612',
-  'GO:0004332',
-  'GO:0004864',
-  'GO:0000976',
-  'GO:0009055'
+  'GO:0004864'
 )
 
-mock_vs_inf_filter <- function(x) {
-  rowSums(!is.na(select(x, ends_with('_inf')))) >= 1
-}
+# GO:0080163 - regulation of protein serine/threonine phosphatase activity
+# GO:0004675 - transmembrane receptor protein serine/threonine kinase activity
+# GO:0106311 - protein threonine kinase activity
+# GO:0033612 - receptor serine/threonine kinase binding
+# GO:0004674 - protein serine/threonine kinas activity
+# GO:0016301 - kinase activity
+# GO:0004672 - protein kinase activity
+# GO:0006468 - protein phosphorylation
+# GO:0016310 - phosphorylation
+# GO:0000160 - phosphorelay signal transduction system
+# GO:0004864 - protein phosphatase inhibitor activity
+
+
+go_terms_phosphorylation_order <- c("GO:0080163", "GO:0004675", "GO:0106311", "GO:0033612", "GO:0004674", "GO:0016301", "GO:0004672", "GO:0006468", "GO:0016310", "GO:0000160", "GO:0004864")
 
 plot_heatmap(
-  heatmap_definition,
-  annotated_degs,
-  go_terms_phosphorylation,
+  heatmap_definition = heatmap_definition,
+  annotated_degs = annotated_degs,
+  comparison_list = go_terms_phosphorylation,
+  comparison_list_order = go_terms_phosphorylation_order,
   filter_by = 'GOterm',
-  filter_fn = mock_vs_inf_filter,
+  filter_fn = mock_vs_inf_filter, # Change filter as 
+  go_annotations = go_annotations,
   filename = 'results/heatmaps/phosphorylation_to_analyse.pdf'
 )
 
+plot_heatmap(
+  heatmap_definition = heatmap_definition,
+  annotated_degs = annotated_degs,
+  comparison_list = go_terms_phosphorylation,
+  comparison_list_order = go_terms_phosphorylation_order,
+  filter_by = 'GOterm',
+  filter_fn = mock_vs_inf_filter,
+  go_annotations = go_annotations,
+  label_rows = FALSE,
+  filename = 'results/heatmaps/phosphorylation_to_analyse_no_label.pdf'
+)
+
+plot_heatmap(
+  heatmap_definition = heatmap_definition,
+  annotated_degs = annotated_degs,
+  comparison_list = go_terms_phosphorylation,
+  comparison_list_order = go_terms_phosphorylation_order,
+  filter_by = 'GOterm',
+  filter_fn = tol_vs_duke_filter, # Change filter as 
+  go_annotations = go_annotations,
+  label_rows = FALSE,
+  filename = 'results/heatmaps/phosphorylation_to_analyse_constitutive_no_label.pdf'
+)
+
 # Hormones
+# ------------------------------------------------------------------------------
 go_terms_hormones <- c(
   "GO:0009737",
   "GO:0009738",
@@ -728,16 +773,78 @@ go_terms_hormones <- c(
   "GO:0052694"
 )
 
+go_terms_hormones_order <- c(
+  "GO:0009688",
+  "GO:0009738",
+  "GO:0009737",
+  "GO:0009695",
+  "GO:0009694",
+  "GO:2000022",
+  "GO:0009753",
+  "GO:0052694",
+  "GO:0009755",
+  "GO:0009873"
+)
+
+# GO:0009688 - abscisic acid biosynthetic process
+# GO:0009738 - abscisic acid-activated signaling pathway
+# GO:0009737 - response to abscisic acid
+# GO:0009695 - jasmonic acid biosynthetic process
+# GO:0009694 - jasmonic acid metabolic process
+# GO:2000022 - regulation of jasmonic acid mediated signaling pathway
+# GO:0009753 - response to jasmonic acid
+# GO:0052694 - jasmonoyl-isoleucine-12-hydroxylase activity
+# GO:0009755 - hormone-mediated signaling pathway
+# GO:0009873 - ethylene-activated signaling pathway
+
 plot_heatmap(
-  heatmap_definition,
-  annotated_degs,
-  go_terms_hormones,
+  heatmap_definition = heatmap_definition,
+  annotated_degs = annotated_degs,
+  comparison_list = go_terms_hormones,
+  comparison_list_order = go_terms_hormones_order,
   filter_by = 'GOterm',
   filter_fn = mock_vs_inf_filter,
+  go_annotations = go_annotations,
   filename = 'results/heatmaps/hormones_to_analyse.pdf'
 )
 
+plot_heatmap(
+  heatmap_definition = heatmap_definition,
+  annotated_degs = annotated_degs,
+  comparison_list = go_terms_hormones,
+  comparison_list_order = go_terms_hormones_order,
+  filter_by = 'GOterm',
+  filter_fn = mock_vs_inf_filter,
+  go_annotations = go_annotations,
+  label_rows = FALSE,
+  filename = 'results/heatmaps/hormones_to_analyse_no_label.pdf'
+)
+
+plot_heatmap(
+  heatmap_definition = heatmap_definition,
+  annotated_degs = annotated_degs,
+  comparison_list = go_terms_hormones,
+  comparison_list_order = go_terms_hormones_order,
+  filter_by = 'GOterm',
+  filter_fn = tol_vs_duke_filter,
+  go_annotations = go_annotations,
+  filename = 'results/heatmaps/hormones_to_analyse_constitutive.pdf'
+)
+
+plot_heatmap(
+  heatmap_definition = heatmap_definition,
+  annotated_degs = annotated_degs,
+  comparison_list = go_terms_hormones,
+  comparison_list_order = go_terms_hormones_order,
+  filter_by = 'GOterm',
+  filter_fn = tol_vs_duke_filter,
+  go_annotations = go_annotations,
+  label_rows = FALSE,
+  filename = 'results/heatmaps/hormones_to_analyse_constitutive_no_label.pdf'
+)
+
 # Example using gene labels
+# ------------------------------------------------------------------------------
 # TODO: change this
 gene_labels <- head(unique(annotated_degs$DEG.Duke.Inf$gene), 100)
 
@@ -751,15 +858,11 @@ plot_heatmap(
 )
 
 # R genes
-# TODO: may need reworking!
-tol_vs_duke_filter <- function(x) {
-  rowSums(!is.na(dplyr::select(x, ends_with('mira_vs_duke')))) == 4 | rowSums(!is.na(dplyr::select(x, ends_with('shona_vs_duke')))) == 4
-}
-
+# ------------------------------------------------------------------------------
 plot_heatmap(
-  heatmap_definition,
-  annotated_degs,
-  prgs,
+  heatmap_definition = heatmap_definition,
+  annotated_degs = annotated_degs,
+  comparison_list = prgs,
   filter_by = 'transcript_id',
   filter_fn = tol_vs_duke_filter,
   filename = 'results/heatmaps/rgenes.pdf'
