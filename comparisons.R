@@ -1,3 +1,8 @@
+#' Create comparisons from a DESeq object
+#' 
+#' @param deseq_object The DESeq object created using the 'DESeq' function
+#' @param comparisons The comparisons definition
+#' @return A list of comparisons
 create_comparisons <- function(deseq_object, comparisons) {
   res = list()
   
@@ -8,6 +13,12 @@ create_comparisons <- function(deseq_object, comparisons) {
   return(res)
 }
 
+
+#' Exclude genes that are not in the intersection of the other varieties.
+#' 
+#' @param hold_out_variety The genes from the variety to exclude
+#' @param ... The genes from the other varieties
+#' @return The filtered dataframe
 exclude_variety <- function(hold_out_variety, ...) {
   result <- setdiff(intersect(...), hold_out_variety)
   result <- as.data.frame(result)
@@ -16,6 +27,14 @@ exclude_variety <- function(hold_out_variety, ...) {
   return(result)
 }
 
+
+#' Create a dataframe with DEGs in only the tolerant varieties (UP and DOWN)
+#' 
+#' @param degs
+#' @param up_down_degs
+#' @param varieties
+#' @param treatment
+#' @param only_p_value_filter
 only_in_tolerant <- function(degs, up_down_degs, varieties, treatment, only_p_value_filter=FALSE) {
   # indicesToRemove <- c(1, 3, 5, 6, 7)
   # c(2,4,5,6,9) -> potv4

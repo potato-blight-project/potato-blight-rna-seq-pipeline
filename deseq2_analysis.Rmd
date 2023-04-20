@@ -662,22 +662,27 @@ if (!dir.exists('results/heatmaps')) {
 
 heatmap_definition <- list(
   inf = list(
+    name = 'Inf. vs Mock',
     comparisons = c('DEG.Duke.Inf', 'DEG.SMira.Inf', 'DEG.SShona.Inf'),
     suffixes = c('_Duke', '_Mira', '_Shona')
   ),
   outinf = list(
+    name = 'OutInf. vs Mock',
     comparisons = c('DEG.Duke.Out', 'DEG.SMira.Out', 'DEG.SShona.Out'),
     suffixes = c('_Duke', '_Mira', '_Shona')
   ),
   control = list(
+    name = 'Control vs Mock',
     comparisons = c('DEG.Duke.Control', 'DEG.SMira.Control', 'DEG.SShona.Control'),
     suffixes = c('_Duke', '_Mira', '_Shona')
   ),
   mira_vs_duke = list(
+    name = 'S.Mira vs Duke',
     comparisons = c('DEG.SMira_vs_Duke.Control', 'DEG.SMira_vs_Duke.Mock', 'DEG.SMira_vs_Duke.Inf', 'DEG.SMira_vs_Duke.Out'),
     suffixes = c('_Control', '_Mock', '_Inf', '_OutInf')
   ),
   shona_vs_duke = list(
+    name = 'S.Shona vs Duke',
     comparisons = c('DEG.SShona_vs_Duke.Control', 'DEG.SShona_vs_Duke.Mock', 'DEG.SShona_vs_Duke.Inf', 'DEG.SShona_vs_Duke.Out'),
     suffixes = c('_Control', '_Mock', '_Inf', '_OutInf')
   )
@@ -729,7 +734,7 @@ plot_heatmap(
   comparison_list = go_terms_phosphorylation,
   comparison_list_order = go_terms_phosphorylation_order,
   filter_by = 'GOterm',
-  filter_fn = mock_vs_inf_filter, # Change filter as 
+  filter_fn = mock_vs_inf_filter,
   go_annotations = go_annotations,
   filename = 'results/heatmaps/phosphorylation_to_analyse.pdf'
 )
@@ -752,7 +757,18 @@ plot_heatmap(
   comparison_list = go_terms_phosphorylation,
   comparison_list_order = go_terms_phosphorylation_order,
   filter_by = 'GOterm',
-  filter_fn = tol_vs_duke_filter, # Change filter as 
+  filter_fn = tol_vs_duke_filter,
+  go_annotations = go_annotations,
+  filename = 'results/heatmaps/phosphorylation_to_analyse_constitutive.pdf'
+)
+
+plot_heatmap(
+  heatmap_definition = heatmap_definition,
+  annotated_degs = annotated_degs,
+  comparison_list = go_terms_phosphorylation,
+  comparison_list_order = go_terms_phosphorylation_order,
+  filter_by = 'GOterm',
+  filter_fn = tol_vs_duke_filter,
   go_annotations = go_annotations,
   label_rows = FALSE,
   filename = 'results/heatmaps/phosphorylation_to_analyse_constitutive_no_label.pdf'
