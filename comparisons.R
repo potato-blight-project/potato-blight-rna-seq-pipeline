@@ -28,6 +28,29 @@ exclude_variety <- function(hold_out_variety, ...) {
 }
 
 
+#' Merge a genes dataframe with annotations from the two tolerant varieties
+#'
+#' @param x The genes dataframe
+#' @param annotations The annotations list
+#' @param to_remove Columns to remove
+#' @param suffixes Suffixes of the resulting dataframe
+merge_with_annotations <- function(x, annotations, to_remove, suffixes) {
+  unique_annotations = lapply(annotations, function (x) { unique(x[,!(names(x) %in% to_remove)]) })
+  
+  return(merge(
+    merge(x,
+          unique_annotations[[1]],
+          by = "gene",
+          all.x = T
+    ),
+    unique_annotations[[2]],
+    by = "gene",
+    all.x = T,
+    suffixes = suffixes
+  ))
+}
+
+
 #' Create a dataframe with DEGs in only the tolerant varieties (UP and DOWN)
 #' 
 #' @param degs
