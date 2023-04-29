@@ -671,11 +671,11 @@ heatmap_definition <- list(
     comparisons = c('DEG.Duke.Out', 'DEG.SMira.Out', 'DEG.SShona.Out'),
     suffixes = c('_Duke', '_Mira', '_Shona')
   ),
-  control = list(
-    name = 'Control vs Mock',
-    comparisons = c('DEG.Duke.Control', 'DEG.SMira.Control', 'DEG.SShona.Control'),
-    suffixes = c('_Duke', '_Mira', '_Shona')
-  ),
+  # control = list(
+  #   name = 'Control vs Mock',
+  #   comparisons = c('DEG.Duke.Control', 'DEG.SMira.Control', 'DEG.SShona.Control'),
+  #   suffixes = c('_Duke', '_Mira', '_Shona')
+  # ),
   mira_vs_duke = list(
     name = 'S.Mira vs Duke',
     comparisons = c('DEG.SMira_vs_Duke.Control', 'DEG.SMira_vs_Duke.Mock', 'DEG.SMira_vs_Duke.Inf', 'DEG.SMira_vs_Duke.Out'),
@@ -692,7 +692,7 @@ mock_vs_inf_filter <- function(x) {
   rowSums(!is.na(select(x, ends_with('_inf')))) >= 1
 }
 
-tol_vs_duke_filter <- function(x) {
+constitutive_filter <- function(x) {
   rowSums(!is.na(dplyr::select(x, ends_with('mira_vs_duke')))) == 4 | rowSums(!is.na(dplyr::select(x, ends_with('shona_vs_duke')))) == 4
 }
 
@@ -757,7 +757,7 @@ plot_heatmap(
   comparison_list = go_terms_phosphorylation,
   comparison_list_order = go_terms_phosphorylation_order,
   filter_by = 'GOterm',
-  filter_fn = tol_vs_duke_filter,
+  filter_fn = constitutive_filter,
   go_annotations = go_annotations,
   filename = 'results/heatmaps/phosphorylation_to_analyse_constitutive.pdf'
 )
@@ -768,7 +768,7 @@ plot_heatmap(
   comparison_list = go_terms_phosphorylation,
   comparison_list_order = go_terms_phosphorylation_order,
   filter_by = 'GOterm',
-  filter_fn = tol_vs_duke_filter,
+  filter_fn = constitutive_filter,
   go_annotations = go_annotations,
   label_rows = FALSE,
   filename = 'results/heatmaps/phosphorylation_to_analyse_constitutive_no_label.pdf'
@@ -842,7 +842,7 @@ plot_heatmap(
   comparison_list = go_terms_hormones,
   comparison_list_order = go_terms_hormones_order,
   filter_by = 'GOterm',
-  filter_fn = tol_vs_duke_filter,
+  filter_fn = constitutive_filter,
   go_annotations = go_annotations,
   filename = 'results/heatmaps/hormones_to_analyse_constitutive.pdf'
 )
@@ -853,7 +853,7 @@ plot_heatmap(
   comparison_list = go_terms_hormones,
   comparison_list_order = go_terms_hormones_order,
   filter_by = 'GOterm',
-  filter_fn = tol_vs_duke_filter,
+  filter_fn = constitutive_filter,
   go_annotations = go_annotations,
   label_rows = FALSE,
   filename = 'results/heatmaps/hormones_to_analyse_constitutive_no_label.pdf'
@@ -880,7 +880,7 @@ plot_heatmap(
   annotated_degs = annotated_degs,
   comparison_list = prgs,
   filter_by = 'transcript_id',
-  filter_fn = tol_vs_duke_filter,
+  filter_fn = constitutive_filter,
   filename = 'results/heatmaps/rgenes.pdf'
 )
 ```

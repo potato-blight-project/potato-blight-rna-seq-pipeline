@@ -86,11 +86,11 @@ plot_heatmap <- function(
             trace = "none", 
             density.info = "none",
             labRow = labels,
-            labCol = c(rep(c("D", "SM", "SS"), 3), rep(c("C", "M", "Inf", "Out"), 2)),
+            labCol = c(rep(c("D", "SM", "SS"), 2), rep(c("C", "M", "Inf", "Out"), 2)),
             cexCol = 0.5,
-            cexRow = 0.4,
+            cexRow = 0.25,
             offsetCol = 0.15,
-            colsep = c(3,6,9,13),
+            colsep = c(3, 6, 10),
             rowsep = rowsep,
             symkey = FALSE,
             lhei = c(1, 10),
@@ -103,7 +103,7 @@ plot_heatmap <- function(
   
   axis(
     side = 3,
-    at = c(0.1, 0.22, 0.33, 0.47, 0.62),
+    at = c(0.12, 0.25, 0.42, 0.6), #c(0.1, 0.22, 0.33, 0.47, 0.62),
     labels = unlist(lapply(heatmap_definition, function(x) {x$name})),
     tick = FALSE,
     cex.axis = 0.52)
