@@ -692,8 +692,15 @@ mock_vs_inf_filter <- function(x) {
   rowSums(!is.na(select(x, ends_with('_inf')))) >= 1
 }
 
+# constitutive_filter <- function(x) {
+#   rowSums(!is.na(dplyr::select(x, ends_with('mira_vs_duke')))) == 4 | rowSums(!is.na(dplyr::select(x, ends_with('shona_vs_duke')))) == 4
+# }
+
 constitutive_filter <- function(x) {
-  rowSums(!is.na(dplyr::select(x, ends_with('mira_vs_duke')))) == 4 | rowSums(!is.na(dplyr::select(x, ends_with('shona_vs_duke')))) == 4
+  dplyr::select(x, ends_with('mira_vs_duke')) %>% lapply(function(x) x > 0) %>% as.data.frame() %>% rowSums(na.rm = T) == 4 |
+    dplyr::select(x, ends_with('mira_vs_duke')) %>% lapply(function(x) x < 0) %>% as.data.frame() %>% rowSums(na.rm = T) == 4 |
+    dplyr::select(x, ends_with('shona_vs_duke')) %>% lapply(function(x) x > 0) %>% as.data.frame() %>% rowSums(na.rm = T) == 4 |
+    dplyr::select(x, ends_with('shona_vs_duke')) %>% lapply(function(x) x < 0) %>% as.data.frame() %>% rowSums(na.rm = T) == 4
 }
 
 # Phosphorylation
