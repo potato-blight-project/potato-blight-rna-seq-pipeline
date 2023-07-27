@@ -437,6 +437,7 @@ volcano_plots_from_comparisons(res,
 ## Venn diagrams
 
 ```{r, echo=FALSE, fig.height=13, fig.width=13}
+source('./plots.R')
 create_venn_diagrams_grid(
   up_down_degs,
   ncol = 2,
@@ -448,32 +449,32 @@ create_venn_diagrams_grid(
     list(
       title="Duke of York ubiquitous up-regulated",
       x=c("DEG.Duke.Out.UP", "DEG.Duke.Inf.UP"),
-      categories=c("Duke Outside Infected\nUp (vs Mock)", "Duke Inside Infected\nUp (vs Mock)")
+      categories=c("Outside infected area", "Inside infected area")
     ),
     list(
       title="Duke of York ubiquitous down-regulated",
       x=c("DEG.Duke.Out.DOWN", "DEG.Duke.Inf.DOWN"),
-      categories=c("Duke Outside Infected\nDown (vs Mock)", "Duke Inside Infected\nDown (vs Mock)")
+      categories=c("Outside infected area", "Inside infected area")
     ),
     list(
       title="Sarpo Mira ubiquitous up-regulated",
       x=c("DEG.SMira.Out.UP", "DEG.SMira.Inf.UP"),
-      categories=c("S.Mira Outside Infected\nUp (vs Mock)", "S.Mira Inside Infected\nUp (vs Mock)")
+      categories=c("Outside infected area", "Inside infected area")
     ),
     list(
       title="Sarpo Mira ubiquitous down-regulated",
       x=c("DEG.SMira.Out.DOWN", "DEG.SMira.Inf.DOWN"),
-      categories=c("S.Mira Outside Infected\nDown (vs Mock)", "S.Mira Inside Infected\nDown (vs Mock)")
+      categories=c("Outside infected area", "Inside infected area")
     ),
     list(
       title="Sarpo Shona ubiquitous up-regulated",
       x=c("DEG.SShona.Out.UP", "DEG.SShona.Inf.UP"),
-      categories=c("S.Shona Outside Infected\nUp (vs Mock)", "S.Shona Inside Infected\nUp (vs Mock)")
+      categories=c("Outside infected area", "Inside infected area")
     ),
     list(
       title="Sarpo Shona ubiquitous down-regulated",
       x=c("DEG.SShona.Out.DOWN", "DEG.SShona.Inf.DOWN"),
-      categories=c("S.Shona Outside Infected\nDown (vs Mock)", "S.Shona Inside Infected\nDown (vs Mock)")
+      categories=c("Outside infected area", "Inside infected area")
     )
   )
 )
@@ -663,13 +664,13 @@ if (!dir.exists('results/heatmaps')) {
 heatmap_definition <- list(
   inf = list(
     name = 'Inf. vs Mock',
-    comparisons = c('DEG.Duke.Inf', 'DEG.SMira.Inf', 'DEG.SShona.Inf'),
-    suffixes = c('_Duke', '_Mira', '_Shona')
+    comparisons = c('DEG.SMira.Inf', 'DEG.SShona.Inf', 'DEG.Duke.Inf'),
+    suffixes = c('_Mira', '_Shona', '_Duke')
   ),
   outinf = list(
     name = 'OutInf. vs Mock',
-    comparisons = c('DEG.Duke.Out', 'DEG.SMira.Out', 'DEG.SShona.Out'),
-    suffixes = c('_Duke', '_Mira', '_Shona')
+    comparisons = c('DEG.SMira.Out', 'DEG.SShona.Out', 'DEG.Duke.Out'),
+    suffixes = c('_Mira', '_Shona', '_Duke')
   ),
   # control = list(
   #   name = 'Control vs Mock',

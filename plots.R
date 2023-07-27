@@ -30,10 +30,12 @@ volcano_plots_from_comparisons <- function(res, ncol, nrow, widths, heights, fil
 get_venn_diagram <- function(x, title, categories, filename = NULL) {
   if (length(categories) == 2) {
     fill <- c("#EFC000FF","#CD534CFF")
-    cat.dist <- c(0.055, 0.055)
+    cat.dist <- c(0.025, 0.025)
+    cat.pos = c(10, -10)
   } else {
     fill <- c("#E69F00","#56B4E9", "#009E73")
     cat.dist <- c(0.055, 0.055, 0.055)
+    cat.pos <- NULL
   }
   
   venn.diagram(filename = filename,
@@ -51,7 +53,7 @@ get_venn_diagram <- function(x, title, categories, filename = NULL) {
                lwd = 1,
                cat.cex = 1.5,
                cat.default.pos = "outer",
-               # cat.pos = c(120, 120),
+               cat.pos = cat.pos,
                cat.dist = cat.dist)
 }
 

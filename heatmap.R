@@ -86,7 +86,7 @@ plot_heatmap <- function(
             trace = "none", 
             density.info = "none",
             labRow = labels,
-            labCol = c(rep(c("D", "SM", "SS"), 2), rep(c("C", "M", "Inf", "Out"), 2)),
+            labCol = c(rep(c("SM", "SS", "D"), 2), rep(c("C", "M", "Inf", "Out"), 2)), # TODO: make this generic
             cexCol = 0.5,
             cexRow = 0.25,
             offsetCol = 0.15,
